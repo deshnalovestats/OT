@@ -57,67 +57,104 @@ class MOPSO:
             particles.append(particle)
         return particles
     
-    def generate_random_solution(self):
-        """Generate a random solution"""
-        solution = Solution(self.jobs, self.processors)
+    # def generate_random_solution(self):
+    #     """Generate a random solution"""
+    #     solution = Solution(self.jobs, self.processors)
         
-        # Randomly assign processors and frequencies
-        for i in range(self.num_jobs):
+    #     # Randomly assign processors and frequencies
+    #     for i in range(self.num_jobs):
 
-            job_id = self.jobs[i].id
+    #         job_id = self.jobs[i].id
 
-            # Random processor assignment
-            solution.processor_assignment[job_id] = random.randint(0, len(self.processors) - 1)
+    #         # Random processor assignment
+    #         solution.processor_assignment[job_id] = random.randint(0, len(self.processors) - 1)
             
-            # Random frequency assignment
-            proc = self.processors[solution.processor_assignment[job_id]]
-            freq_index = random.randint(0, len(proc.freq_levels) - 1)
-            solution.frequency_assignment[job_id] = proc.freq_levels[freq_index]
+    #         # Random frequency assignment
+    #         proc = self.processors[solution.processor_assignment[job_id]]
+    #         freq_index = random.randint(0, len(proc.freq_levels) - 1)
+    #         solution.frequency_assignment[job_id] = proc.freq_levels[freq_index]
             
-            # Random optional execution (0 or 1)
-            solution.optional_execution[job_id] = random.randint(0, 1)
+    #         # Random optional execution (0 or 1)
+    #         solution.optional_execution[job_id] = random.randint(0, 1)
         
-        # Determine start times using a simple greedy approach
-        solution = self.determine_start_times(solution)
+    #     # # Determine start times using a simple greedy approach
+    #     # solution = self.determine_start_times(solution)
         
-        return solution
+    #     return solution
     
-    def determine_start_times(self, solution: Solution):
-        """Determine start times for jobs using earliest deadline first"""
-        # Sort jobs by deadline
-        job_indices = list(range(self.num_jobs))
-        job_indices.sort(key=lambda i: self.jobs[i].deadline)
-        
-        # Initialize processor availability times
-        processor_available = [0] * len(self.processors)
-        
-        # Feasible flag
-        solution.feasible = True
-        
-        for job_idx in job_indices:
-            job = self.jobs[job_idx]
-            job_id= job.id
-            proc_idx = solution.processor_assignment[job_id]
-            freq = solution.frequency_assignment[job_id]
-            
-            # Calculate execution time with the assigned frequency
-            exec_time = job.task.c_m / freq
-            if solution.optional_execution[job_id] == 1:
-                exec_time += job.task.c_o / freq
-            
-            # Earliest start time is max of job's arrival time and processor's availability
-            earliest_start = max(job.arrival_time, processor_available[proc_idx])
-            
-            # Check if job can finish before its deadline
-            if earliest_start + exec_time > job.deadline:
+    def generate_random_solution(self):
+        """Generate a random solution with feasibility-aware initialization"""
+        solution = Solution(self.jobs, self.processors)
+
+        for job in self.jobs:
+            job_id = job.id
+
+            # Randomly assign a processor
+            proc = random.choice(self.processors)
+            solution.processor_assignment[job_id] = proc.id
+
+            # Filter frequencies that allow mandatory execution to fit in the period
+            valid_freqs = [f for f in proc.freq_levels if (job.task.c_m / f) <= job.task.period]
+            if not valid_freqs:
+                # No feasible frequency for mandatory part, mark as infeasible
                 solution.feasible = False
-                # Assign the start time anyway, but mark the solution as infeasible
-                solution.start_times[job_idx] = earliest_start
+                # Still assign highest frequency for fallback
+                solution.frequency_assignment[job_id] = max(proc.freq_levels)
             else:
-                solution.start_times[job_idx] = earliest_start
-                processor_available[proc_idx] = earliest_start + exec_time
-        
+                # Assign a random valid frequency
+                freq = random.choice(valid_freqs)
+                solution.frequency_assignment[job_id] = freq
+
+            # Decide optional execution only if there's room for it
+            exec_time_mandatory = job.task.c_m / solution.frequency_assignment[job_id]
+            exec_time_optional = job.task.c_o / solution.frequency_assignment[job_id]
+            if exec_time_mandatory + exec_time_optional <= job.task.period:
+                solution.optional_execution[job_id] = random.choice([0, 1])
+            else:
+                solution.optional_execution[job_id] = 0  # No room for optional part
+
+        # # Attempt to determine start times and re-check feasibility
+        # solution = self.determine_start_times(solution)
+
         return solution
+
+        
+    # def determine_start_times(self, solution: Solution):
+    #     """Determine start times for jobs using earliest deadline first"""
+    #     # Sort jobs by deadline
+    #     job_indices = list(range(self.num_jobs))
+    #     job_indices.sort(key=lambda i: self.jobs[i].deadline)
+        
+    #     # Initialize processor availability times
+    #     processor_available = [0] * len(self.processors)
+        
+    #     # Feasible flag
+    #     solution.feasible = True
+        
+    #     for job_idx in job_indices:
+    #         job = self.jobs[job_idx]
+    #         job_id= job.id
+    #         proc_idx = solution.processor_assignment[job_id]
+    #         freq = solution.frequency_assignment[job_id]
+            
+    #         # Calculate execution time with the assigned frequency
+    #         exec_time = job.task.c_m / freq
+    #         if solution.optional_execution[job_id] == 1:
+    #             exec_time += job.task.c_o / freq
+            
+    #         # Earliest start time is max of job's arrival time and processor's availability
+    #         earliest_start = max(job.arrival_time, processor_available[proc_idx])
+            
+    #         # Check if job can finish before its deadline
+    #         if earliest_start + exec_time > job.deadline:
+    #             solution.feasible = False
+    #             # Assign the start time anyway, but mark the solution as infeasible
+    #             # solution.start_times[job_id] = earliest_start
+    #         else:
+    #             # solution.start_times[job_id] = earliest_start
+    #             processor_available[proc_idx] = earliest_start + exec_time
+        
+    #     return solution
     
     def repair_solution(self, solution):
         """Try to repair an infeasible solution"""
@@ -135,7 +172,7 @@ class MOPSO:
                 # If the solution is still infeasible, try to remove optional execution
                 if new_solution.optional_execution[job_id] == 1:
                     new_solution.optional_execution[job_id] = 0
-                    new_solution = self.determine_start_times(new_solution)
+                    # new_solution = self.determine_start_times(new_solution)
             else:
                 break
         
@@ -153,7 +190,7 @@ class MOPSO:
                 # Try all higher frequencies
                 for freq_idx in range(current_freq_idx+1, len(proc.freq_levels)):
                     new_solution.frequency_assignment[job_id] = proc.freq_levels[freq_idx]
-                    new_solution = self.determine_start_times(new_solution)
+                    # new_solution = self.determine_start_times(new_solution)
                     if new_solution.feasible:
                         break
                 
@@ -172,7 +209,7 @@ class MOPSO:
                         new_solution.processor_assignment[job_id] = p
                         # Use highest frequency
                         new_solution.frequency_assignment[job_id] = self.processors[p].freq_levels[-1]
-                        new_solution = self.determine_start_times(new_solution)
+                        # new_solution = self.determine_start_times(new_solution)
                         if new_solution.feasible:
                             break
                 
@@ -315,8 +352,8 @@ class MOPSO:
             else:
                 new_solution.optional_execution[job_id] = 0
         
-        # Determine start times and check feasibility
-        new_solution = self.determine_start_times(new_solution)
+        # # Determine start times and check feasibility
+        # new_solution = self.determine_start_times(new_solution)
         
         # If solution is not feasible, try to repair it
         if not new_solution.feasible:

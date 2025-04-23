@@ -17,7 +17,7 @@ def lcm_multiple(numbers):
         result = lcm(result, num)
     return result
 
-for filename in sorted(os.listdir(DATA_DIR))[0:1]:  # Adjust the range as needed
+for filename in sorted(os.listdir(DATA_DIR))[69:70]:  # Adjust the range as needed
     
     if filename.endswith(".json"):
         filepath = os.path.join(DATA_DIR, filename)
