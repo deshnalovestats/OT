@@ -1,0 +1,5 @@
+__pycache__/
+results_NSGA/
+results_MOPSO/
+MOPSO/
+data/
