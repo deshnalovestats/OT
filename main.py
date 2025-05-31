@@ -20,6 +20,8 @@ from typing import Dict, List, Optional
 import os
 from visualisation import *
 
+
+
 def create_sample_system():
     """Create a sample system for testing"""
     # Create tasks (similar to ACC example in the paper)
@@ -417,7 +419,7 @@ def main():
                 else:
                     print("Please select at least 2 algorithms for comparison!")
             except ValueError:
-                print("Invalid input! Please enter valid numbers.")
+                print("Invalid")
         
         
         elif choice == '3':
