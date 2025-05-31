@@ -19,25 +19,19 @@ import pandas as pd
 from typing import Dict, List, Optional
 import os
 from visualisation import *
+import json
 
 def create_sample_system():
     """Create a sample system for testing"""
-    # Create tasks (similar to ACC example in the paper)
-    tasks = [
-        Task(id=0, c_m=20, c_o=15, period=100),  # Obstacle Detection
-        Task(id=1, c_m=10, c_o=10, period=100),  # Speed Profile Adjustment
-        Task(id=2, c_m=5, c_o=8, period=50),     # Sensor Data Processing
-        Task(id=3, c_m=15, c_o=5, period=200),   # Path Planning
-    ]
-    
-    # Create processors with different frequency levels
-    processors = [
-        Processor(id=0, frequencies=[0.5, 0.7, 0.9, 1.0]),  # High-performance processor
-        Processor(id=1, frequencies=[0.3, 0.5, 0.7]),       # Energy-efficient processor
-        Processor(id=2, frequencies=[0.4, 0.6, 0.8, 1.0]),  # Balanced processor
-    ]
+    json_file = 'sample_data/instance_000.json'
+    with open(json_file, 'r') as f:
+        data = json.load(f)
+
+    tasks = [Task(t["id"], t["c_m"], t["c_o"], t["p"]) for t in data["tasks"]]
+    processors = [Processor(p["id"], p["frequencies"]) for p in data["processors"]]
     
     return tasks, processors
+
 
 def get_available_algorithms():
     """Get dictionary of available multi-objective algorithms"""
