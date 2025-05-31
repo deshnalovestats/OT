@@ -21,6 +21,8 @@ import os
 from visualisation import *
 import json
 
+
+
 def create_sample_system():
     """Create a sample system for testing"""
     json_file = 'sample_data/instance_000.json'
@@ -411,7 +413,7 @@ def main():
                 else:
                     print("Please select at least 2 algorithms for comparison!")
             except ValueError:
-                print("Invalid input! Please enter valid numbers.")
+                print("Invalid")
         
         
         elif choice == '3':
