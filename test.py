@@ -1,12 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.core.problem import Problem
-from pymoo.operators.crossover.pntx import TwoPointCrossover
-from pymoo.operators.mutation.bitflip import BitflipMutation
-from pymoo.operators.sampling.rnd import BinaryRandomSampling
-from pymoo.optimize import minimize
-from pymoo.visualization.scatter import Scatter
 import random
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
