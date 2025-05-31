@@ -173,3 +173,19 @@ def summarize_pareto_front(result, problem: EnergyPerformanceOptimizationProblem
     print(f"\nActual Value Ranges:")
     print(f"  - Energy: {np.min(actual_energies):.2f} to {np.max(actual_energies):.2f}")
     print(f"  - Penalty: {np.min(actual_penalties):.2f} to {np.max(actual_penalties):.2f}")
+
+
+
+        #     print("\nAvailable Multi-Objective Algorithms:")
+        #     print("-" * 80)
+        #     for name, info in algorithms.items():
+        #         print(f"{name:12} | {info['description']}")
+        #         # Show key parameters
+        #         key_params = []
+        #         if 'pop_size' in info['params']:
+        #             key_params.append(f"Pop: {info['params']['pop_size']}")
+        #         if 'ref_dirs' in info['params']:
+        #             key_params.append("Uses reference directions")
+        #         if key_params:
+        #             print(f"{'':<12} | Parameters: {', '.join(key_params)}")
+        #         print()

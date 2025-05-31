@@ -312,8 +312,7 @@ def main():
         print("="*60)
         print("1. Run single algorithm")
         print("2. Compare multiple algorithms")
-        print("3. List available algorithms")
-        print("4. Exit")
+        print("3. Exit")
         
         choice = input("\nEnter your choice (1-4): ").strip()
         
@@ -403,40 +402,26 @@ def main():
                     # Allow detailed analysis of best algorithm
                     if results:
                         print(f"\nAlgorithms compared: {', '.join(results.keys())}")
-                        best_alg = input("Enter algorithm name for detailed analysis (or press Enter to skip): ").strip()
+                        selected_alg = input("Enter algorithm name for detailed analysis (or press Enter to skip): ").strip()
                         
-                        if best_alg in results:
-                            result = results[best_alg]
-                            problem = problems[best_alg]
+                        if selected_alg in results:
+                            result = results[selected_alg]
+                            problem = problems[selected_alg]
                             
                             if len(result.F) > 0:
                                 best_energy_idx = np.argmin(result.F[:, 0])
                                 assignments = analyze_solution(best_energy_idx, result, problem)
                                 if assignments:
-                                    visualize_schedule(assignments, problem, f"{best_alg} Best Energy (Comparison)")
-                                    visualize_processor_utilization(assignments, problem, f"{best_alg} Best Energy (Comparison)")
+                                    visualize_schedule(assignments, problem, f"{selected_alg} Best Energy (Comparison)")
+                                    visualize_processor_utilization(assignments, problem, f"{selected_alg} Best Energy (Comparison)")
                 else:
                     print("Please select at least 2 algorithms for comparison!")
             except ValueError:
                 print("Invalid input! Please enter valid numbers.")
         
-        elif choice == '3':
-            print("\nAvailable Multi-Objective Algorithms:")
-            print("-" * 80)
-            for name, info in algorithms.items():
-                print(f"{name:12} | {info['description']}")
-                # Show key parameters
-                key_params = []
-                if 'pop_size' in info['params']:
-                    key_params.append(f"Pop: {info['params']['pop_size']}")
-                if 'ref_dirs' in info['params']:
-                    key_params.append("Uses reference directions")
-                if key_params:
-                    print(f"{'':<12} | Parameters: {', '.join(key_params)}")
-                print()
         
-        elif choice == '4':
-            print("Goodbye!")
+        elif choice == '3':
+            print("END")
             break
         
         else:

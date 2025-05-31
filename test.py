@@ -2,6 +2,7 @@ import numpy as np
 import random
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
+from pymoo.core.problem import Problem
 
 @dataclass
 class Task:
