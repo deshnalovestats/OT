@@ -54,9 +54,8 @@ class EnergyPerformanceOptimizationProblem(Problem):
         max_freq_levels = max(len(p.frequencies) for p in processors)
         self.bits_per_processor = int(np.ceil(np.log2(self.n_processors)))
         self.bits_per_frequency = int(np.ceil(np.log2(max_freq_levels)))
-        self.bits_per_job = self.bits_per_processor + self.bits_per_frequency + 1  # +1 for optional execution
-        
-        n_var = self.n_jobs * self.bits_per_job
+
+        n_var = self.n_jobs * self.bits_per_processor + self.n_jobs * self.bits_per_frequency + self.n_jobs * 1
         
         super().__init__(n_var=n_var, n_obj=2, n_constr=0, xl=0, xu=1, vtype=bool)
         
@@ -124,26 +123,31 @@ class EnergyPerformanceOptimizationProblem(Problem):
         return j_min, j_max
     
     def _decode_solution(self, x: np.ndarray) -> List[Dict]:
-        """Decode binary solution vector into job assignments"""
+        """Decode solution vector with grouped variable blocks."""
         assignments = []
-        
-        for job_idx in range(self.n_jobs):
-            start_idx = job_idx * self.bits_per_job
-            
-            # Extract processor assignment bits
-            proc_bits = x[start_idx:start_idx + self.bits_per_processor]
+        n = self.n_jobs
+        bp = self.bits_per_processor
+        bf = self.bits_per_frequency
+    
+        # Calculate block starts
+        proc_start = 0
+        freq_start = n * bp
+        opt_start = freq_start + n * bf
+    
+        for job_idx in range(n):
+            # Processor assignment bits
+            proc_bits = x[proc_start + job_idx * bp : proc_start + (job_idx + 1) * bp]
             processor_id = int(''.join(map(str, proc_bits.astype(int))), 2) % self.n_processors
-            
-            # Extract frequency assignment bits
-            freq_start = start_idx + self.bits_per_processor
-            freq_bits = x[freq_start:freq_start + self.bits_per_frequency]
+    
+            # Frequency assignment bits
+            freq_bits = x[freq_start + job_idx * bf : freq_start + (job_idx + 1) * bf]
             freq_idx = int(''.join(map(str, freq_bits.astype(int))), 2) % len(self.processors[processor_id].frequencies)
             frequency = self.processors[processor_id].frequencies[freq_idx]
-            
-            # Extract optional execution bit
-            optional_bit = x[start_idx + self.bits_per_processor + self.bits_per_frequency]
+    
+            # Optional execution bit
+            optional_bit = x[opt_start + job_idx]
             execute_optional = bool(optional_bit)
-            
+    
             assignment = {
                 'job_id': job_idx,
                 'processor_id': processor_id,
@@ -151,10 +155,10 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 'execute_optional': execute_optional
             }
             assignments.append(assignment)
-        
+
         return assignments
     
-    def _check_timing_constraints(self, assignments: List[Dict]) -> bool:
+    def _check_timing_constraints(self, assignments: List[Dict]) -> int:
         """Check if all timing constraints are satisfied"""
         
         processor_schedules = {p.id: [] for p in self.processors}
@@ -178,12 +182,12 @@ class EnergyPerformanceOptimizationProblem(Problem):
             
             processor_schedules[assignment['processor_id']].append(schedule_item)
         
-        
+        c = 0
         for proc_id, schedule in processor_schedules.items():
             if not self._is_schedulable_edf(schedule):
-                return False
+                c += 1 
         
-        return True
+        return c
     
     def _is_schedulable_edf(self, jobs: List[Dict]) -> bool:
         """Check if jobs are schedulable using Earliest Deadline First (EDF)"""
@@ -251,26 +255,24 @@ class EnergyPerformanceOptimizationProblem(Problem):
         n_solutions = x.shape[0]
         f1_values = np.zeros(n_solutions)  
         f2_values = np.zeros(n_solutions)  
+        g_values = np.zeros(n_solutions)
         
         for i in range(n_solutions):
             assignments = self._decode_solution(x[i])
             
             
-            if not self._check_timing_constraints(assignments):
-                # Penalize infeasible solutions
-                f1_values[i] = 1.0  
-                f2_values[i] = 1.0  
-            else:
-                
-                energy = self._calculate_energy(assignments)
-                penalty = self._calculate_performance_penalty(assignments)
-                
-                
-                e_min, e_max = self.energy_bounds
-                j_min, j_max = self.performance_bounds
-                
-                f1_values[i] = (energy - e_min) / (e_max - e_min) if e_max > e_min else 0
-                f2_values[i] = (penalty - j_min) / (j_max - j_min) if j_max > j_min else 0
+            g_values[i] = self._check_timing_constraints(assignments)
+            energy = self._calculate_energy(assignments)
+            penalty = self._calculate_performance_penalty(assignments)
+            
+            
+            e_min, e_max = self.energy_bounds
+            j_min, j_max = self.performance_bounds
+            
+            f1_values[i] = (energy - e_min) / (e_max - e_min) if e_max > e_min else 0
+            f2_values[i] = (penalty - j_min) / (j_max - j_min) if j_max > j_min else 0
         
         out["F"] = np.column_stack([f1_values, f2_values])
+        out["G"] = g_values
+        out["CV"] = np.maximum(0, g_values)
 
