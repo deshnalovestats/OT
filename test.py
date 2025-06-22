@@ -153,6 +153,31 @@ class EnergyPerformanceOptimizationProblem(Problem):
             assignments.append(assignment)
         
         return assignments
+
+    def _encode_solution(self, assignments: List[Dict]) -> np.ndarray:
+        """
+        Encode job assignments back into a binary solution vector.
+        """
+        x = np.zeros(self.n_jobs * self.bits_per_job, dtype=bool)
+        for job_idx, assignment in enumerate(assignments):
+            start_idx = job_idx * self.bits_per_job
+
+            # Processor assignment
+            proc_bits = np.array(list(np.binary_repr(assignment['processor_id'], width=self.bits_per_processor)), dtype=int)
+            x[start_idx:start_idx + self.bits_per_processor] = proc_bits
+
+            # Frequency assignment (find index in processor's frequency list)
+            proc_id = assignment['processor_id']
+            freq_idx = self.processors[proc_id].frequencies.index(assignment['frequency'])
+            freq_bits = np.array(list(np.binary_repr(freq_idx, width=self.bits_per_frequency)), dtype=int)
+            freq_start = start_idx + self.bits_per_processor
+            x[freq_start:freq_start + self.bits_per_frequency] = freq_bits
+
+            # Optional execution bit
+            x[start_idx + self.bits_per_processor + self.bits_per_frequency] = int(assignment['execute_optional'])
+
+        return x
+
     
     def _check_timing_constraints(self, assignments: List[Dict]) -> bool:
         """Check if all timing constraints are satisfied"""
@@ -265,26 +290,27 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 
                 # --- Strategy 1: Fix frequency assignments ---
                 for job in self.jobs:
-                    job_id = job.id
-                    proc_id = assignments['proc_assignment'][job_id]
-                    freq = assignments['freq_assignment'][job_id]
+                    job_id =  job['id']
+                    proc_id = assignments[job_id]['processor_id']
+                    freq = assignments[job_id]['frequency']
                     proc = next(p for p in self.processors if p.id == proc_id)
 
-                    if freq not in proc.freq_levels:
-                        corrected_freq = min(proc.freq_levels, key=lambda f: abs(f - freq))
-                        assignments['freq_assignment'][job_id] = corrected_freq
-                        current_freq_idx = proc.freq_levels.index(corrected_freq)
+                    if freq not in proc.frequencies:
+                        corrected_freq = min(proc.frequencies, key=lambda f: abs(f - freq))
+                        assignments[job_id]['frequency'] = corrected_freq
+                        current_freq_idx = proc.frequencies.index(corrected_freq)
                     else:
-                        current_freq_idx = proc.freq_levels.index(freq)
+                        current_freq_idx = proc.frequencies.index(freq)
 
                     # Try increasing frequency if not at max
-                    if current_freq_idx < len(proc.freq_levels) - 1:
-                        assignments['freq_assignment'][job_id] = proc.freq_levels[current_freq_idx + 1]
+                    if current_freq_idx < len(proc.frequencies) - 1:
+                        assignments[job_id]['frequency']= proc.frequencies[current_freq_idx + 1]
 
                 # --- Strategy 2: Drop optional executions ---
                 for job in self.jobs:
-                    if assignments['opt_execution'][job.id] == 1:
-                        assignments['opt_execution'][job.id] = 0
+                    job_id =  job['id']
+                    if assignments[job_id]['execute_optional'] == 1:
+                        assignments[job_id]['execute_optional'] = 0
 
                 # Encode back to solution vector
                 x_repaired[i] = self._encode_solution(assignments)
@@ -312,6 +338,8 @@ class EnergyPerformanceOptimizationProblem(Problem):
             
             
             if not self._check_timing_constraints(assignments):
+                f1_values[i] = 1.0
+                f2_values[i] = 1.0
                 print(f"Solution {i} does not satisfy timing constraints")
             else:
                 
