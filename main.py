@@ -20,8 +20,15 @@ from typing import Dict, List, Optional
 import os
 from visualisation import *
 import json
+from pymoo.operators.sampling.base import Sampling
 
-
+class FeasibleBinarySampling(Sampling):
+    def _do(self, problem, n_samples, **kwargs):
+        X = np.random.random(n_samples, problem.n_var)
+        X = (X < 0.5).astype(bool)
+        X = problem.repair(X)
+        return X
+    
 
 def create_sample_system():
     """Create a sample system for testing"""
@@ -42,7 +49,7 @@ def get_available_algorithms():
             'class': NSGA2,
             'params': {
                 'pop_size': 100,
-                'sampling': BinaryRandomSampling(),
+                'sampling': FeasibleRandomSampling(),
                 'crossover': TwoPointCrossover(),
                 'mutation': BitflipMutation(prob=0.1),
                 'eliminate_duplicates': True
@@ -54,7 +61,7 @@ def get_available_algorithms():
             'params': {
                 'pop_size': 100,
                 'ref_dirs': get_reference_directions("das-dennis", 2, n_partitions=12),
-                'sampling': BinaryRandomSampling(),
+                'sampling': FeasibleBinarySampling(),
                 'crossover': TwoPointCrossover(),
                 'mutation': BitflipMutation(prob=0.1),
                 'eliminate_duplicates': True

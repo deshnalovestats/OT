@@ -246,6 +246,61 @@ class EnergyPerformanceOptimizationProblem(Problem):
         
         return penalty
     
+    def repair(self, x, **kwargs):
+        """
+        Repair infeasible solutions in the population x.
+        For each individual, if infeasible, attempt repair strategies before resampling.
+        """
+        x_repaired = x.copy()
+        
+        for i in range(x.shape[0]):
+            max_attempts = 100  # Avoid infinite loops
+            attempts = 0
+            
+            while attempts < max_attempts:
+                assignments = self._decode_solution(x_repaired[i])
+                
+                if self._check_timing_constraints(assignments):
+                    break  # Feasible
+                
+                # --- Strategy 1: Fix frequency assignments ---
+                for job in self.jobs:
+                    job_id = job.id
+                    proc_id = assignments['proc_assignment'][job_id]
+                    freq = assignments['freq_assignment'][job_id]
+                    proc = next(p for p in self.processors if p.id == proc_id)
+
+                    if freq not in proc.freq_levels:
+                        corrected_freq = min(proc.freq_levels, key=lambda f: abs(f - freq))
+                        assignments['freq_assignment'][job_id] = corrected_freq
+                        current_freq_idx = proc.freq_levels.index(corrected_freq)
+                    else:
+                        current_freq_idx = proc.freq_levels.index(freq)
+
+                    # Try increasing frequency if not at max
+                    if current_freq_idx < len(proc.freq_levels) - 1:
+                        assignments['freq_assignment'][job_id] = proc.freq_levels[current_freq_idx + 1]
+
+                # --- Strategy 2: Drop optional executions ---
+                for job in self.jobs:
+                    if assignments['opt_execution'][job.id] == 1:
+                        assignments['opt_execution'][job.id] = 0
+
+                # Encode back to solution vector
+                x_repaired[i] = self._encode_solution(assignments)
+
+                # Check again after repair
+                assignments = self._decode_solution(x_repaired[i])
+                if self._check_timing_constraints(assignments):
+                    break  # Successfully repaired
+
+                # If still infeasible, resample
+                x_repaired[i] = np.random.randint(0, 2, size=x.shape[1])
+                attempts += 1
+
+        return x_repaired
+
+    
     def _evaluate(self, x, out, *args, **kwargs):
         """Evaluate the multi-objective optimization problem"""
         n_solutions = x.shape[0]
@@ -257,9 +312,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
             
             
             if not self._check_timing_constraints(assignments):
-                # Penalize infeasible solutions
-                f1_values[i] = 1.0  
-                f2_values[i] = 1.0  
+                print(f"Solution {i} does not satisfy timing constraints")
             else:
                 
                 energy = self._calculate_energy(assignments)
