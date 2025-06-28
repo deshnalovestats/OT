@@ -3,6 +3,7 @@ import random
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
 from pymoo.core.problem import Problem
+from pymoo.core.sampling import Sampling
 
 @dataclass
 class Task:
@@ -181,7 +182,6 @@ class EnergyPerformanceOptimizationProblem(Problem):
     
     def _check_timing_constraints(self, assignments: List[Dict]) -> bool:
         """Check if all timing constraints are satisfied"""
-        
         processor_schedules = {p.id: [] for p in self.processors}
         
         for i, assignment in enumerate(assignments):
@@ -190,9 +190,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
             if assignment['execute_optional']:
                 execution_time += job['c_o']
             
-            
             actual_execution_time = execution_time / assignment['frequency']
-            
             schedule_item = {
                 'job_id': job['id'],
                 'release_time': job['release_time'],
@@ -200,12 +198,11 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 'execution_time': actual_execution_time,
                 'assignment': assignment
             }
-            
             processor_schedules[assignment['processor_id']].append(schedule_item)
-        
         
         for proc_id, schedule in processor_schedules.items():
             if not self._is_schedulable_edf(schedule):
+                # print(f"Processor {proc_id} schedule is not feasible.")
                 return False
         
         return True
@@ -276,6 +273,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
         Repair infeasible solutions in the population x.
         For each individual, if infeasible, attempt repair strategies before resampling.
         """
+        print("Repairing infeasible solutions")
         x_repaired = x.copy()
         
         for i in range(x.shape[0]):
@@ -290,7 +288,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 
                 # --- Strategy 1: Fix frequency assignments ---
                 for job in self.jobs:
-                    job_id =  job['id']
+                    job_id = job['id']
                     proc_id = assignments[job_id]['processor_id']
                     freq = assignments[job_id]['frequency']
                     proc = next(p for p in self.processors if p.id == proc_id)
@@ -298,18 +296,15 @@ class EnergyPerformanceOptimizationProblem(Problem):
                     if freq not in proc.frequencies:
                         corrected_freq = min(proc.frequencies, key=lambda f: abs(f - freq))
                         assignments[job_id]['frequency'] = corrected_freq
-                        current_freq_idx = proc.frequencies.index(corrected_freq)
                     else:
                         current_freq_idx = proc.frequencies.index(freq)
-
-                    # Try increasing frequency if not at max
-                    if current_freq_idx < len(proc.frequencies) - 1:
-                        assignments[job_id]['frequency']= proc.frequencies[current_freq_idx + 1]
+                        if current_freq_idx < len(proc.frequencies) - 1:
+                            assignments[job_id]['frequency'] = proc.frequencies[current_freq_idx + 1]
 
                 # --- Strategy 2: Drop optional executions ---
                 for job in self.jobs:
-                    job_id =  job['id']
-                    if assignments[job_id]['execute_optional'] == 1:
+                    job_id = job['id']
+                    if assignments[job_id]['execute_optional']:
                         assignments[job_id]['execute_optional'] = 0
 
                 # Encode back to solution vector
@@ -323,29 +318,47 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 # If still infeasible, resample
                 x_repaired[i] = np.random.randint(0, 2, size=x.shape[1])
                 attempts += 1
+                print(f"Repairing solution {i}, attempts: {attempts}")
+                if self._check_timing_constraints(assignments):
+                    print(f"Solution {i} repaired successfully.")
+                else:
+                    print(f"Solution {i} could not be repaired.")
 
         return x_repaired
 
     
     def _evaluate(self, x, out, *args, **kwargs):
         """Evaluate the multi-objective optimization problem"""
+        # import traceback
+        # print("Traceback for _evaluate call:")
+        # traceback.print_stack()  # Print the call stack
+
+        # Log the shape of x and its source
+        print(f"Evaluating solutions with shape: {x.shape}")
+        if hasattr(self, 'current_generation'):
+            print(f"Current generation: {self.current_generation}")
+        else:
+            print("Generation information not available.")
+        generation = getattr(self, 'current_generation', 'unknown')
         n_solutions = x.shape[0]
+        # print(f"Evaluating generation {generation} with {n_solutions} solutions (offspring).")  # Log the number of solutions
+        print(f"Evaluating generation {getattr(self, 'current_generation', 'unknown')} with {n_solutions} solutions.")
         f1_values = np.zeros(n_solutions)  
         f2_values = np.zeros(n_solutions)  
+        feasible_count = 0  # Counter for feasible solutions
+        infeasible_count = 0  # Counter for infeasible solutions
         
         for i in range(n_solutions):
             assignments = self._decode_solution(x[i])
             
-            
             if not self._check_timing_constraints(assignments):
+                infeasible_count += 1  # Increment infeasible solution count
                 f1_values[i] = 1.0
                 f2_values[i] = 1.0
-                print(f"Solution {i} does not satisfy timing constraints")
             else:
-                
+                feasible_count += 1  # Increment feasible solution count
                 energy = self._calculate_energy(assignments)
                 penalty = self._calculate_performance_penalty(assignments)
-                
                 
                 e_min, e_max = self.energy_bounds
                 j_min, j_max = self.performance_bounds
@@ -353,5 +366,32 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 f1_values[i] = (energy - e_min) / (e_max - e_min) if e_max > e_min else 0
                 f2_values[i] = (penalty - j_min) / (j_max - j_min) if j_max > j_min else 0
         
+        # print(f"Number of infeasible solutions in this generation: {infeasible_count}")
+        # print(f"Number of feasible solutions in this generation: {feasible_count}")
+        
         out["F"] = np.column_stack([f1_values, f2_values])
+        out["is_feasible"] = np.array([self._check_timing_constraints(self._decode_solution(x[i])) for i in range(n_solutions)])
+    
+    def _evaluate_callback(self, algorithm):
+        """Callback to pass the generation number to _evaluate."""
+        self.current_generation = algorithm.n_gen
 
+        # Get the population after ranking and selection
+        ranked_population = algorithm.pop
+
+        # Count the number of feasible solutions
+        feasible_solutions = np.sum(ranked_population.get("is_feasible"))
+        total_solutions = len(ranked_population)
+
+        # Log the number of feasible solutions
+        print(f"Generation {self.current_generation}: Total solutions after ranking: {total_solutions}")
+        print(f"Generation {self.current_generation}: Feasible solutions after ranking: {feasible_solutions}")
+
+        # Log parent and offspring populations (optional, for debugging)
+        parent_population = algorithm.pop.get("X")  # Parent population
+        offspring_population = algorithm.off.get("X") if hasattr(algorithm, 'off') else None  # Offspring population
+        print(f"Generation {self.current_generation}: Parent population size: {parent_population.shape[0]}")
+        if offspring_population is not None:
+            print(f"Generation {self.current_generation}: Offspring population size: {offspring_population.shape[0]}")
+        else:
+            print(f"Generation {self.current_generation}: No offspring population available.")

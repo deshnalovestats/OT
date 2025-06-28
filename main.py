@@ -22,13 +22,42 @@ from visualisation import *
 import json
 from pymoo.core.sampling import Sampling
 
+# class FeasibleBinarySampling(Sampling):
+#     def _do(self, problem, n_samples, **kwargs):
+#         X = np.random.random((n_samples, problem.n_var))
+#         X = (X < 0.5).astype(bool)
+#         X = problem.repair(X)
+#         return X
+
+
+
 class FeasibleBinarySampling(Sampling):
     def _do(self, problem, n_samples, **kwargs):
-        X = np.random.random((n_samples, problem.n_var))
-        X = (X < 0.5).astype(bool)
-        X = problem.repair(X)
-        return X
-    
+        feasible_solutions = []
+        max_attempts = 1000  # Limit to avoid infinite loops
+        while len(feasible_solutions) < n_samples and max_attempts > 0:
+            # Generate random binary solutions
+            X = np.random.random((n_samples, problem.n_var))
+            X = (X < 0.5).astype(bool)
+
+            # Repair solutions
+            X_repaired = problem.repair(X)
+
+            # Check feasibility of repaired solutions
+            for i in range(X_repaired.shape[0]):
+                assignments = problem._decode_solution(X_repaired[i])
+                if problem._check_timing_constraints(assignments):
+                    feasible_solutions.append(X_repaired[i])
+                    if len(feasible_solutions) == n_samples:
+                        break
+
+            max_attempts -= 1
+
+        if len(feasible_solutions) < n_samples:
+            print(f"Only {len(feasible_solutions)} feasible solutions generated after {1000 - max_attempts} attempts.")
+            raise ValueError("Unable to generate enough feasible solutions within the maximum attempts.")
+
+        return np.array(feasible_solutions)
 
 def create_sample_system():
     """Create a sample system for testing"""
@@ -49,7 +78,7 @@ def get_available_algorithms():
             'class': NSGA2,
             'params': {
                 'pop_size': 100,
-                'sampling': BinaryRandomSampling(),
+                'sampling': FeasibleBinarySampling(),
                 'crossover': TwoPointCrossover(),
                 'mutation': BitflipMutation(prob=0.1),
                 'eliminate_duplicates': True
@@ -153,7 +182,8 @@ def run_optimization(algorithm_name: str = 'NSGA2', n_generations: int = 100, ve
         algorithm,
         ('n_gen', n_generations),
         verbose=verbose,
-        save_history=True
+        save_history=True,
+        callback=lambda algorithm: problem._evaluate_callback(algorithm)
     )
     
     print(f"\nOptimization completed!")
