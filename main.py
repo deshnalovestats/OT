@@ -21,6 +21,8 @@ import os
 from visualisation import *
 import json
 from pymoo.core.sampling import Sampling
+import numpy as np
+from pymoo.core.crossover import Crossover
 
 # class FeasibleBinarySampling(Sampling):
 #     def _do(self, problem, n_samples, **kwargs):
@@ -31,6 +33,68 @@ from pymoo.core.sampling import Sampling
 
 
 
+class JobLevelUniformCrossover(Crossover):
+    def __init__(self, **kwargs):
+        """
+        Job-level uniform crossover operator.
+
+        Parameters
+        ----------
+        bits_per_job : int
+            Number of bits per job in the chromosome.
+        """
+        super().__init__(2, 2, **kwargs)  # 2 parents → 2 children
+
+    def _do(self, problem, X, **kwargs):
+        """
+        Perform job-level uniform crossover.
+
+        Parameters
+        ----------
+        problem : Problem
+            The problem instance.
+        X : np.ndarray
+            The population matrix (parents).
+
+        Returns
+        -------
+        np.ndarray
+            The offspring population after crossover.
+        """
+        _, n_matings, n_var = X.shape
+        bits_per_job = problem.bits_per_job 
+        n_jobs = n_var // bits_per_job  # Calculate the number of jobs
+
+        # Initialize offspring
+        Y = np.empty_like(X)
+
+        for k in range(n_matings):
+            parent1, parent2 = X[0, k], X[1, k]
+
+            # Perform job-level uniform crossover
+            child1 = np.zeros_like(parent1)
+            child2 = np.zeros_like(parent2)
+
+            for job_idx in range(n_jobs):
+                start = job_idx * bits_per_job
+                end = start + bits_per_job
+
+                # Random coin toss for each job
+                if np.random.rand() < 0.5:
+                    # Take job block from Parent 1 for Child 1, Parent 2 for Child 2
+                    child1[start:end] = parent1[start:end]
+                    child2[start:end] = parent2[start:end]
+                else:
+                    # Take job block from Parent 2 for Child 1, Parent 1 for Child 2
+                    child1[start:end] = parent2[start:end]
+                    child2[start:end] = parent1[start:end]
+
+            # Store the children
+            Y[0, k] = child1
+            Y[1, k] = child2
+
+        return Y
+    
 class FeasibleBinarySampling(Sampling):
     def _do(self, problem, n_samples, **kwargs):
         feasible_solutions = []
@@ -79,7 +143,7 @@ def get_available_algorithms():
             'params': {
                 'pop_size': 100,
                 'sampling': FeasibleBinarySampling(),
-                'crossover': TwoPointCrossover(),
+                'crossover': JobLevelUniformCrossover(),
                 'mutation': BitflipMutation(prob=0.1),
                 'eliminate_duplicates': True
             },
