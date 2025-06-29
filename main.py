@@ -23,6 +23,7 @@ import json
 from pymoo.core.sampling import Sampling
 import numpy as np
 from pymoo.core.crossover import Crossover
+from tabulate import tabulate
 
 # class FeasibleBinarySampling(Sampling):
 #     def _do(self, problem, n_samples, **kwargs):
@@ -37,17 +38,12 @@ class JobLevelUniformCrossover(Crossover):
     def __init__(self, **kwargs):
         """
         Job-level uniform crossover operator.
-
-        Parameters
-        ----------
-        bits_per_job : int
-            Number of bits per job in the chromosome.
         """
         super().__init__(2, 2, **kwargs)  # 2 parents → 2 children
 
     def _do(self, problem, X, **kwargs):
         """
-        Perform job-level uniform crossover.
+        Perform job-level uniform crossover and print parents and children.
 
         Parameters
         ----------
@@ -62,7 +58,7 @@ class JobLevelUniformCrossover(Crossover):
             The offspring population after crossover.
         """
         _, n_matings, n_var = X.shape
-        bits_per_job = problem.bits_per_job 
+        bits_per_job = problem.bits_per_job
         n_jobs = n_var // bits_per_job  # Calculate the number of jobs
 
         # Initialize offspring
@@ -93,8 +89,45 @@ class JobLevelUniformCrossover(Crossover):
             Y[0, k] = child1
             Y[1, k] = child2
 
+            # Print parents and children in tabular format
+            self._print_crossover_results(parent1, parent2, child1, child2, k)
+
         return Y
-    
+
+    def _print_crossover_results(self, parent1, parent2, child1, child2, mating_index):
+        """
+        Print the parents and children in a tabular format with binary representation.
+
+        Parameters
+        ----------
+        parent1 : np.ndarray
+            The first parent chromosome.
+        parent2 : np.ndarray
+            The second parent chromosome.
+        child1 : np.ndarray
+            The first child chromosome.
+        child2 : np.ndarray
+            The second child chromosome.
+        mating_index : int
+            The index of the current mating pair.
+        """
+        # Convert boolean arrays to binary (0/1)
+        parent1_binary = "".join(map(str, parent1.astype(int)))
+        parent2_binary = "".join(map(str, parent2.astype(int)))
+        child1_binary = "".join(map(str, child1.astype(int)))
+        child2_binary = "".join(map(str, child2.astype(int)))
+
+        # Prepare the table
+        table = [
+            ["Parent 1", parent1_binary],
+            ["Parent 2", parent2_binary],
+            ["Child 1", child1_binary],
+            ["Child 2", child2_binary],
+        ]
+
+        print(f"\nMating Pair {mating_index + 1}")
+        print(tabulate(table, headers=["Type", "Chromosome"], tablefmt="grid"))
+
 class FeasibleBinarySampling(Sampling):
     def _do(self, problem, n_samples, **kwargs):
         feasible_solutions = []
