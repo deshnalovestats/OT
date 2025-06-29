@@ -267,7 +267,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
             penalty += (task.c_o ** 2) * skipped
         
         return penalty
-    
+       
     def repair(self, x, **kwargs):
         """
         Repair infeasible solutions in the population x.
@@ -277,52 +277,45 @@ class EnergyPerformanceOptimizationProblem(Problem):
         x_repaired = x.copy()
         
         for i in range(x.shape[0]):
-            max_attempts = 100  # Avoid infinite loops
-            attempts = 0
+            assignments = self._decode_solution(x_repaired[i])           
+            if self._check_timing_constraints(assignments):
+                continue  # Feasible
             
-            while attempts < max_attempts:
-                assignments = self._decode_solution(x_repaired[i])
-                
-                if self._check_timing_constraints(assignments):
-                    break  # Feasible
-                
-                # --- Strategy 1: Fix frequency assignments ---
-                for job in self.jobs:
-                    job_id = job['id']
-                    proc_id = assignments[job_id]['processor_id']
-                    freq = assignments[job_id]['frequency']
-                    proc = next(p for p in self.processors if p.id == proc_id)
+            # --- Strategy 1: Fix frequency assignments ---
+            for job in self.jobs:
+                job_id = job['id']
+                proc_id = assignments[job_id]['processor_id']
+                freq = assignments[job_id]['frequency']
+                proc = next(p for p in self.processors if p.id == proc_id)
 
-                    if freq not in proc.frequencies:
-                        corrected_freq = min(proc.frequencies, key=lambda f: abs(f - freq))
-                        assignments[job_id]['frequency'] = corrected_freq
-                    else:
-                        current_freq_idx = proc.frequencies.index(freq)
-                        if current_freq_idx < len(proc.frequencies) - 1:
-                            assignments[job_id]['frequency'] = proc.frequencies[current_freq_idx + 1]
-
-                # --- Strategy 2: Drop optional executions ---
-                for job in self.jobs:
-                    job_id = job['id']
-                    if assignments[job_id]['execute_optional']:
-                        assignments[job_id]['execute_optional'] = 0
-
-                # Encode back to solution vector
+                # if freq not in proc.frequencies:
+                #     corrected_freq = min(proc.frequencies, key=lambda f: abs(f - freq))
+                #     assignments[job_id]['frequency'] = corrected_freq
+                # else:
+                current_freq_idx = proc.frequencies.index(freq)
+                if current_freq_idx < len(proc.frequencies) - 1:
+                    assignments[job_id]['frequency'] = proc.frequencies[current_freq_idx + 1]
+            
+            # Check feasibility after Strategy 1
+            if self._check_timing_constraints(assignments):
                 x_repaired[i] = self._encode_solution(assignments)
+                continue
 
-                # Check again after repair
-                assignments = self._decode_solution(x_repaired[i])
-                if self._check_timing_constraints(assignments):
-                    break  # Successfully repaired
+            # --- Strategy 2: Drop optional executions ---
+            for job in self.jobs:
+                job_id = job['id']
+                if assignments[job_id]['execute_optional']:
+                    assignments[job_id]['execute_optional'] = 0
 
-                # If still infeasible, resample
-                x_repaired[i] = np.random.randint(0, 2, size=x.shape[1])
-                attempts += 1
-                print(f"Repairing solution {i}, attempts: {attempts}")
-                if self._check_timing_constraints(assignments):
-                    print(f"Solution {i} repaired successfully.")
-                else:
-                    print(f"Solution {i} could not be repaired.")
+            # Check feasibility after Strategy 2
+            if self._check_timing_constraints(assignments):
+                x_repaired[i] = self._encode_solution(assignments)
+                continue
+
+            if self._check_timing_constraints(assignments):
+                print(f"Solution {i} repaired successfully.")
+            else:
+                print(f"Solution {i} could not be repaired.")
 
         return x_repaired
 
@@ -341,8 +334,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
             print("Generation information not available.")
         generation = getattr(self, 'current_generation', 'unknown')
         n_solutions = x.shape[0]
-        # print(f"Evaluating generation {generation} with {n_solutions} solutions (offspring).")  # Log the number of solutions
-        print(f"Evaluating generation {getattr(self, 'current_generation', 'unknown')} with {n_solutions} solutions.")
+        print(f"Evaluating generation {generation} with {n_solutions} solutions.") # Log the number of solutions
         f1_values = np.zeros(n_solutions)  
         f2_values = np.zeros(n_solutions)  
         feasible_count = 0  # Counter for feasible solutions

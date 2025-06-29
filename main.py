@@ -100,9 +100,36 @@ class FeasibleBinarySampling(Sampling):
         feasible_solutions = []
         max_attempts = 1000  # Limit to avoid infinite loops
         while len(feasible_solutions) < n_samples and max_attempts > 0:
-            # Generate random binary solutions
-            X = np.random.random((n_samples, problem.n_var))
-            X = (X < 0.5).astype(bool)
+            print(f"\nAttempt {1000 - max_attempts + 1}: {len(feasible_solutions)} feasible found so far")
+            X = [] # leftover solutions to sample
+            n_jobs = problem.n_jobs
+            bits_per_processor = problem.bits_per_processor
+            bits_per_frequency = problem.bits_per_frequency
+            remaining = n_samples - len(feasible_solutions)
+
+            for i in range(remaining):
+                bits = []
+                for job_idx in range(n_jobs):
+                    # Processor assignment
+                    proc_id = np.random.randint(0, problem.n_processors)
+                    proc_bits = np.array(list(np.binary_repr(proc_id, width=bits_per_processor)), dtype=int)
+
+                    # Frequency assignment (valid for the selected processor)
+                    freq_levels = problem.processors[proc_id].frequencies
+                    freq_idx = np.random.randint(0, len(freq_levels))
+                    freq_bits = np.array(list(np.binary_repr(freq_idx, width=bits_per_frequency)), dtype=int)
+
+                    # Optional execution bit
+                    opt_bit = np.random.randint(0, 2)
+
+                    bits.extend(proc_bits)
+                    bits.extend(freq_bits)
+                    bits.append(opt_bit)
+                X.append(bits)
+                print(f"Generated solution {i}: {bits}")
+            X = np.array(X, dtype=bool)
+
+            print(f"Sampling shape: {X.shape}")
 
             # Repair solutions
             X_repaired = problem.repair(X)
@@ -110,10 +137,15 @@ class FeasibleBinarySampling(Sampling):
             # Check feasibility of repaired solutions
             for i in range(X_repaired.shape[0]):
                 assignments = problem._decode_solution(X_repaired[i])
+                print(f"Solution {i} after repair: {X_repaired[i].astype(int)}")
+                print(f"Decoded assignments for solution {i}: {assignments}")
                 if problem._check_timing_constraints(assignments):
+                    print(f"Feasible: solution {i}")
                     feasible_solutions.append(X_repaired[i])
                     if len(feasible_solutions) == n_samples:
                         break
+                else:
+                    print(f"Infeasible even after repair: solution {i}")
 
             max_attempts -= 1
 
