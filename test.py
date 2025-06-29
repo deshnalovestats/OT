@@ -287,17 +287,14 @@ class EnergyPerformanceOptimizationProblem(Problem):
                 proc_id = assignments[job_id]['processor_id']
                 freq = assignments[job_id]['frequency']
                 proc = next(p for p in self.processors if p.id == proc_id)
-
-                # if freq not in proc.frequencies:
-                #     corrected_freq = min(proc.frequencies, key=lambda f: abs(f - freq))
-                #     assignments[job_id]['frequency'] = corrected_freq
-                # else:
+                # If frequency is not the maximum, increase it
                 current_freq_idx = proc.frequencies.index(freq)
                 if current_freq_idx < len(proc.frequencies) - 1:
                     assignments[job_id]['frequency'] = proc.frequencies[current_freq_idx + 1]
             
             # Check feasibility after Strategy 1
             if self._check_timing_constraints(assignments):
+                #print(f"Solution {i} repaired successfully using Strategy 1.")
                 x_repaired[i] = self._encode_solution(assignments)
                 continue
 
@@ -309,13 +306,14 @@ class EnergyPerformanceOptimizationProblem(Problem):
 
             # Check feasibility after Strategy 2
             if self._check_timing_constraints(assignments):
+                #print(f"Solution {i} repaired successfully using Strategy 1 and 2.")
                 x_repaired[i] = self._encode_solution(assignments)
                 continue
 
-            if self._check_timing_constraints(assignments):
-                print(f"Solution {i} repaired successfully.")
-            else:
-                print(f"Solution {i} could not be repaired.")
+            # if self._check_timing_constraints(assignments):
+            #     print(f"Solution {i} repaired successfully.")
+            # else:
+            #     print(f"Solution {i} could not be repaired.")
 
         return x_repaired
 

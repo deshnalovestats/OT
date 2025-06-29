@@ -24,6 +24,7 @@ from pymoo.core.sampling import Sampling
 import numpy as np
 from pymoo.core.crossover import Crossover
 from tabulate import tabulate
+SEED = 42
 
 # class FeasibleBinarySampling(Sampling):
 #     def _do(self, problem, n_samples, **kwargs):
@@ -90,7 +91,7 @@ class JobLevelUniformCrossover(Crossover):
             Y[1, k] = child2
 
             # Print parents and children in tabular format
-            self._print_crossover_results(parent1, parent2, child1, child2, k)
+            # self._print_crossover_results(parent1, parent2, child1, child2, k)
 
         return Y
 
@@ -133,7 +134,6 @@ class FeasibleBinarySampling(Sampling):
         feasible_solutions = []
         max_attempts = 1000  # Limit to avoid infinite loops
         while len(feasible_solutions) < n_samples and max_attempts > 0:
-            print(f"\nAttempt {1000 - max_attempts + 1}: {len(feasible_solutions)} feasible found so far")
             X = [] # leftover solutions to sample
             n_jobs = problem.n_jobs
             bits_per_processor = problem.bits_per_processor
@@ -159,10 +159,9 @@ class FeasibleBinarySampling(Sampling):
                     bits.extend(freq_bits)
                     bits.append(opt_bit)
                 X.append(bits)
-                print(f"Generated solution {i}: {bits}")
             X = np.array(X, dtype=bool)
 
-            print(f"Sampling shape: {X.shape}")
+            #print(f"Sampling shape: {X.shape}")
 
             # Repair solutions
             X_repaired = problem.repair(X)
@@ -170,18 +169,16 @@ class FeasibleBinarySampling(Sampling):
             # Check feasibility of repaired solutions
             for i in range(X_repaired.shape[0]):
                 assignments = problem._decode_solution(X_repaired[i])
-                print(f"Solution {i} after repair: {X_repaired[i].astype(int)}")
-                print(f"Decoded assignments for solution {i}: {assignments}")
                 if problem._check_timing_constraints(assignments):
-                    print(f"Feasible: solution {i}")
                     feasible_solutions.append(X_repaired[i])
+                    #print(f"[FeasibleBinarySampling] Solution {len(feasible_solutions)}/{n_samples} accepted (attempt {1000-max_attempts+1})")
                     if len(feasible_solutions) == n_samples:
                         break
-                else:
-                    print(f"Infeasible even after repair: solution {i}")
+                # else:
+                #     print(f"[FeasibleBinarySampling] Infeasible even after repair: solution {i}")
 
             max_attempts -= 1
-
+        print(f"[FeasibleBinarySampling] Completed: {len(feasible_solutions)} feasible solutions generated in {1000-max_attempts} attempts.")
         if len(feasible_solutions) < n_samples:
             print(f"Only {len(feasible_solutions)} feasible solutions generated after {1000 - max_attempts} attempts.")
             raise ValueError("Unable to generate enough feasible solutions within the maximum attempts.")
