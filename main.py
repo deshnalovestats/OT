@@ -20,170 +20,11 @@ from typing import Dict, List, Optional
 import os
 from visualisation import *
 import json
-from pymoo.core.sampling import Sampling
 import numpy as np
-from pymoo.core.crossover import Crossover
-from tabulate import tabulate
-SEED = 42
+from CustFeasibleSampling import FeasibleBinarySampling
+from CustJobLevelCrossover import JobLevelUniformCrossover
+from CustJobLevelMutation import JobLevelMutation
 
-# class FeasibleBinarySampling(Sampling):
-#     def _do(self, problem, n_samples, **kwargs):
-#         X = np.random.random((n_samples, problem.n_var))
-#         X = (X < 0.5).astype(bool)
-#         X = problem.repair(X)
-#         return X
-
-
-
-class JobLevelUniformCrossover(Crossover):
-    def __init__(self, **kwargs):
-        """
-        Job-level uniform crossover operator.
-        """
-        super().__init__(2, 2, **kwargs)  # 2 parents → 2 children
-
-    def _do(self, problem, X, **kwargs):
-        """
-        Perform job-level uniform crossover and print parents and children.
-
-        Parameters
-        ----------
-        problem : Problem
-            The problem instance.
-        X : np.ndarray
-            The population matrix (parents).
-
-        Returns
-        -------
-        np.ndarray
-            The offspring population after crossover.
-        """
-        _, n_matings, n_var = X.shape
-        bits_per_job = problem.bits_per_job
-        n_jobs = n_var // bits_per_job  # Calculate the number of jobs
-
-        # Initialize offspring
-        Y = np.empty_like(X)
-
-        for k in range(n_matings):
-            parent1, parent2 = X[0, k], X[1, k]
-
-            # Perform job-level uniform crossover
-            child1 = np.zeros_like(parent1)
-            child2 = np.zeros_like(parent2)
-
-            for job_idx in range(n_jobs):
-                start = job_idx * bits_per_job
-                end = start + bits_per_job
-
-                # Random coin toss for each job
-                if np.random.rand() < 0.5:
-                    # Take job block from Parent 1 for Child 1, Parent 2 for Child 2
-                    child1[start:end] = parent1[start:end]
-                    child2[start:end] = parent2[start:end]
-                else:
-                    # Take job block from Parent 2 for Child 1, Parent 1 for Child 2
-                    child1[start:end] = parent2[start:end]
-                    child2[start:end] = parent1[start:end]
-
-            # Store the children
-            Y[0, k] = child1
-            Y[1, k] = child2
-
-            # Print parents and children in tabular format
-            # self._print_crossover_results(parent1, parent2, child1, child2, k)
-
-        return Y
-
-    def _print_crossover_results(self, parent1, parent2, child1, child2, mating_index):
-        """
-        Print the parents and children in a tabular format with binary representation.
-
-        Parameters
-        ----------
-        parent1 : np.ndarray
-            The first parent chromosome.
-        parent2 : np.ndarray
-            The second parent chromosome.
-        child1 : np.ndarray
-            The first child chromosome.
-        child2 : np.ndarray
-            The second child chromosome.
-        mating_index : int
-            The index of the current mating pair.
-        """
-        # Convert boolean arrays to binary (0/1)
-        parent1_binary = "".join(map(str, parent1.astype(int)))
-        parent2_binary = "".join(map(str, parent2.astype(int)))
-        child1_binary = "".join(map(str, child1.astype(int)))
-        child2_binary = "".join(map(str, child2.astype(int)))
-
-        # Prepare the table
-        table = [
-            ["Parent 1", parent1_binary],
-            ["Parent 2", parent2_binary],
-            ["Child 1", child1_binary],
-            ["Child 2", child2_binary],
-        ]
-
-        print(f"\nMating Pair {mating_index + 1}")
-        print(tabulate(table, headers=["Type", "Chromosome"], tablefmt="grid"))
-
-class FeasibleBinarySampling(Sampling):
-    def _do(self, problem, n_samples, **kwargs):
-        feasible_solutions = []
-        max_attempts = 1000  # Limit to avoid infinite loops
-        while len(feasible_solutions) < n_samples and max_attempts > 0:
-            X = [] # leftover solutions to sample
-            n_jobs = problem.n_jobs
-            bits_per_processor = problem.bits_per_processor
-            bits_per_frequency = problem.bits_per_frequency
-            remaining = n_samples - len(feasible_solutions)
-
-            for i in range(remaining):
-                bits = []
-                for job_idx in range(n_jobs):
-                    # Processor assignment
-                    proc_id = np.random.randint(0, problem.n_processors)
-                    proc_bits = np.array(list(np.binary_repr(proc_id, width=bits_per_processor)), dtype=int)
-
-                    # Frequency assignment (valid for the selected processor)
-                    freq_levels = problem.processors[proc_id].frequencies
-                    freq_idx = np.random.randint(0, len(freq_levels))
-                    freq_bits = np.array(list(np.binary_repr(freq_idx, width=bits_per_frequency)), dtype=int)
-
-                    # Optional execution bit
-                    opt_bit = np.random.randint(0, 2)
-
-                    bits.extend(proc_bits)
-                    bits.extend(freq_bits)
-                    bits.append(opt_bit)
-                X.append(bits)
-            X = np.array(X, dtype=bool)
-
-            #print(f"Sampling shape: {X.shape}")
-
-            # Repair solutions
-            X_repaired = problem.repair(X)
-
-            # Check feasibility of repaired solutions
-            for i in range(X_repaired.shape[0]):
-                assignments = problem._decode_solution(X_repaired[i])
-                if problem._check_timing_constraints(assignments):
-                    feasible_solutions.append(X_repaired[i])
-                    #print(f"[FeasibleBinarySampling] Solution {len(feasible_solutions)}/{n_samples} accepted (attempt {1000-max_attempts+1})")
-                    if len(feasible_solutions) == n_samples:
-                        break
-                # else:
-                #     print(f"[FeasibleBinarySampling] Infeasible even after repair: solution {i}")
-
-            max_attempts -= 1
-        print(f"[FeasibleBinarySampling] Completed: {len(feasible_solutions)} feasible solutions generated in {1000-max_attempts} attempts.")
-        if len(feasible_solutions) < n_samples:
-            print(f"Only {len(feasible_solutions)} feasible solutions generated after {1000 - max_attempts} attempts.")
-            raise ValueError("Unable to generate enough feasible solutions within the maximum attempts.")
-
-        return np.array(feasible_solutions)
 
 def create_sample_system():
     """Create a sample system for testing"""
@@ -206,7 +47,7 @@ def get_available_algorithms():
                 'pop_size': 100,
                 'sampling': FeasibleBinarySampling(),
                 'crossover': JobLevelUniformCrossover(),
-                'mutation': BitflipMutation(prob=0.1),
+                'mutation': JobLevelMutation(prob=0.2),
                 'eliminate_duplicates': True
             },
             'description': 'Non-dominated Sorting Genetic Algorithm II'

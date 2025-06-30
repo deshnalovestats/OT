@@ -133,12 +133,12 @@ class EnergyPerformanceOptimizationProblem(Problem):
             
             # Extract processor assignment bits
             proc_bits = x[start_idx:start_idx + self.bits_per_processor]
-            processor_id = int(''.join(map(str, proc_bits.astype(int))), 2) % self.n_processors
+            processor_id = int(''.join(map(str, proc_bits.astype(int))), 2) 
             
             # Extract frequency assignment bits
             freq_start = start_idx + self.bits_per_processor
             freq_bits = x[freq_start:freq_start + self.bits_per_frequency]
-            freq_idx = int(''.join(map(str, freq_bits.astype(int))), 2) % len(self.processors[processor_id].frequencies)
+            freq_idx = int(''.join(map(str, freq_bits.astype(int))), 2) 
             frequency = self.processors[processor_id].frequencies[freq_idx]
             
             # Extract optional execution bit
