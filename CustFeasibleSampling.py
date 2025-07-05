@@ -57,7 +57,7 @@ class FeasibleBinarySampling(Sampling):
                 #     print(f"[FeasibleBinarySampling] Infeasible even after repair: solution {i}")
 
             max_attempts -= 1
-        print(f"[FeasibleBinarySampling] Completed: {len(feasible_solutions)} feasible solutions generated in {1000-max_attempts} attempts.")
+        #print(f"[FeasibleBinarySampling] Completed: {len(feasible_solutions)} feasible solutions generated in {1000-max_attempts} attempts.")
         if len(feasible_solutions) < n_samples:
             print(f"Only {len(feasible_solutions)} feasible solutions generated after {1000 - max_attempts} attempts.")
             raise ValueError("Unable to generate enough feasible solutions within the maximum attempts.")

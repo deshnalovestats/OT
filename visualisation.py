@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 from typing import List, Dict
 from test import *
 import matplotlib.patches as patches
+from pymoo.optimize import minimize
+import imageio # type: ignore
+import pandas as pd
+from pymoo.vendor.hv import HyperVolume 
 
 def visualize_pareto_front(result, algorithm_name: str, save_dir: str = "results"):
     """Create comprehensive Pareto front visualization"""
@@ -322,3 +326,137 @@ def visualize_processor_utilization(assignments: List[Dict], problem: EnergyPerf
                 dpi=300, bbox_inches='tight')
     print(f"Processor analysis saved as '{save_dir}/processor_analysis_{solution_name.lower().replace(' ', '_')}.png'")
     plt.close()
+
+def analyze_hypervolume_and_spread(result, algorithm_name: str, ref_point=[1.2, 1.2], save_dir: str = "results"):
+    """Analyze and plot hypervolume and diversity (spread) progress over generations."""
+    if not hasattr(result, "history") or not result.history:
+        print("No generation history available for hypervolume/diversity analysis.")
+        return None, None
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    hypervolume_progress = []
+    spread_progress = []
+
+    hv = HyperVolume(referencePoint=ref_point)
+
+    for gen in result.history:
+        F = gen.pop.get("F")
+        hypervolume_progress.append(hv.compute(F))
+        pairwise_dist = np.linalg.norm(F[:, None, :] - F[None, :, :], axis=2)
+        diversity = np.std(pairwise_dist)
+        spread_progress.append(diversity)
+
+    # Plotting
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(hypervolume_progress, marker='o')
+    plt.title(f"Hypervolume Progress - {algorithm_name}")
+    plt.xlabel("Generation")
+    plt.ylabel("Hypervolume")
+
+    plt.subplot(1, 2, 2)
+    plt.plot(spread_progress, marker='s', color='orange')
+    plt.title(f"Diversity Progress (Spread) - {algorithm_name}")
+    plt.xlabel("Generation")
+    plt.ylabel("Std. of Pairwise Distances")
+
+    plt.tight_layout()
+    save_path = os.path.join(save_dir, f"hv_spread_{algorithm_name.lower().replace(' ', '_')}.png")
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Hypervolume and diversity progress saved as '{save_path}'")
+    plt.close()
+
+    return hypervolume_progress, spread_progress
+
+def summarize_pareto_table(result, algorithm_name: str, save_dir: str = "results"):
+    """Print and save a summary table of the Pareto front."""
+    if not hasattr(result, "F") or len(result.F) == 0:
+        print("No Pareto front solutions to summarize.")
+        return None
+
+    summary = []
+    for i in range(len(result.F)):
+        summary.append({
+            'ID': i,
+            'Energy': result.F[i, 0],
+            'Performance': result.F[i, 1]
+        })
+    df = pd.DataFrame(summary)
+    print(f"\nPareto Front Summary for {algorithm_name}:")
+    print(df.to_string(index=False, float_format='%.4f'))
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, f"pareto_summary_{algorithm_name.lower().replace(' ', '_')}.csv")
+    df.to_csv(save_path, index=False)
+    print(f"Pareto front summary saved as '{save_path}'")
+    return df
+
+def multiple_runs_boxplot(problem, algorithm_name, algorithm_params, algorithm_class, n_runs=20, n_gen=100, save_dir="results"):
+    """Run multiple seeds and plot a boxplot of final hypervolume values."""
+    hv_values = []
+    ref_point = [1.2, 1.2]
+    hv = HyperVolume(referencePoint=ref_point)
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    print(f"\n{'='*60}")
+    print(f"Running {n_runs} runs for {algorithm_name} to analyze hypervolume distribution")
+    print(f"{'='*60}")
+
+    for seed in range(n_runs):
+        np.random.seed(seed)
+        random.seed(seed)
+        algorithm = algorithm_class(**algorithm_params)
+        result = minimize(problem, algorithm, ('n_gen', n_gen), verbose=False)
+        hv_val = hv.compute(result.F)
+        hv_values.append(hv_val)
+        print(f"  Run {seed+1}/{n_runs}: Hypervolume = {hv_val:.4f}")
+
+    plt.boxplot(hv_values)
+    plt.title(f"Hypervolume Boxplot over {n_runs} seeds ({algorithm_name})")
+    plt.ylabel("Hypervolume")
+    plt.grid()
+    save_path = os.path.join(save_dir, f"hv_boxplot_{algorithm_name.lower().replace(' ', '_')}.png")
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Hypervolume boxplot saved as '{save_path}'")
+    plt.close()
+
+    return hv_values
+
+def animate_pareto_front(result, savefile="pareto_evolution.gif", save_dir="results"):
+    """Create and save an animation of Pareto front evolution over generations."""
+    import imageio
+    if not hasattr(result, "history") or not result.history:
+        print("No generation history available for animation.")
+        return
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    images = []
+    tmp_files = []
+    for i, gen in enumerate(result.history):
+        F = gen.pop.get("F")
+        fig, ax = plt.subplots()
+        ax.scatter(F[:, 0], F[:, 1], color='red')
+        ax.set_title(f"Generation {i}")
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_xlabel("Energy")
+        ax.set_ylabel("Penalty")
+        plt.tight_layout()
+        fname = os.path.join(save_dir, f"tmp_{i}.png")
+        plt.savefig(fname)
+        plt.close()
+        images.append(imageio.v2.imread(fname))
+        tmp_files.append(fname)
+    gif_path = os.path.join(save_dir, savefile)
+    imageio.mimsave(gif_path, images, fps=2)
+    # cleanup
+    for fname in tmp_files:
+        os.remove(fname)
+    print(f"Saved Pareto front evolution animation to {gif_path}")

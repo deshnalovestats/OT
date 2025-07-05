@@ -273,7 +273,7 @@ class EnergyPerformanceOptimizationProblem(Problem):
         Repair infeasible solutions in the population x.
         For each individual, if infeasible, attempt repair strategies before resampling.
         """
-        print("Repairing infeasible solutions")
+        #print("Repairing infeasible solutions")
         x_repaired = x.copy()
         
         for i in range(x.shape[0]):
@@ -325,14 +325,14 @@ class EnergyPerformanceOptimizationProblem(Problem):
         # traceback.print_stack()  # Print the call stack
 
         # Log the shape of x and its source
-        print(f"Evaluating solutions with shape: {x.shape}")
-        if hasattr(self, 'current_generation'):
-            print(f"Current generation: {self.current_generation}")
-        else:
-            print("Generation information not available.")
+        #print(f"Evaluating solutions with shape: {x.shape}")
+        # if hasattr(self, 'current_generation'):
+        #     print(f"Current generation: {self.current_generation}")
+        # else:
+        #     print("Generation information not available.")
         generation = getattr(self, 'current_generation', 'unknown')
         n_solutions = x.shape[0]
-        print(f"Evaluating generation {generation} with {n_solutions} solutions.") # Log the number of solutions
+        # print(f"Evaluating generation {generation} with {n_solutions} solutions.") # Log the number of solutions
         f1_values = np.zeros(n_solutions)  
         f2_values = np.zeros(n_solutions)  
         feasible_count = 0  # Counter for feasible solutions
@@ -374,14 +374,14 @@ class EnergyPerformanceOptimizationProblem(Problem):
         total_solutions = len(ranked_population)
 
         # Log the number of feasible solutions
-        print(f"Generation {self.current_generation}: Total solutions after ranking: {total_solutions}")
-        print(f"Generation {self.current_generation}: Feasible solutions after ranking: {feasible_solutions}")
+        #print(f"Generation {self.current_generation}: Total solutions after ranking: {total_solutions}")
+        #print(f"Generation {self.current_generation}: Feasible solutions after ranking: {feasible_solutions}")
 
         # Log parent and offspring populations (optional, for debugging)
         parent_population = algorithm.pop.get("X")  # Parent population
         offspring_population = algorithm.off.get("X") if hasattr(algorithm, 'off') else None  # Offspring population
-        print(f"Generation {self.current_generation}: Parent population size: {parent_population.shape[0]}")
-        if offspring_population is not None:
-            print(f"Generation {self.current_generation}: Offspring population size: {offspring_population.shape[0]}")
-        else:
-            print(f"Generation {self.current_generation}: No offspring population available.")
+        #print(f"Generation {self.current_generation}: Parent population size: {parent_population.shape[0]}")
+        # if offspring_population is not None:
+        #     print(f"Generation {self.current_generation}: Offspring population size: {offspring_population.shape[0]}")
+        # else:
+        #     print(f"Generation {self.current_generation}: No offspring population available.")
