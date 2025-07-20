@@ -334,7 +334,17 @@ def main():
                     if result is not None and len(result.F) > 0:
                         # Create visualizations
                         visualize_pareto_front(result, selected_alg)
-                        
+                        # Analyze and plot hypervolume/diversity progress
+                        analyze_hypervolume_and_spread(result, selected_alg)
+                        # Print and save Pareto front summary table
+                        summarize_pareto_table(result, selected_alg)
+                        # For boxplot over multiple runs:
+                        algorithm_class = algorithms[selected_alg]['class']
+                        algorithm_params = algorithms[selected_alg]['params']
+                        multiple_runs_boxplot(problem, selected_alg,algorithm_params, algorithm_class, n_runs=20, n_gen=100)
+                        # For Pareto front animation:
+                        animate_pareto_front(result, savefile=f"pareto_evolution_{selected_alg}.gif")
+
                         # Analyze best solutions
                         print("\n" + "="*60)
                         print("SOLUTION ANALYSIS")
