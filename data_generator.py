@@ -4,10 +4,10 @@ import random
 
 # === Settings ===
 num_instances_required = 50
-fixed_num_tasks = 10 #change a
-fixed_num_processors = 5
-num_freqs_per_processor = 5  # number of frequency levels per processor
-fixed_proc_dir = "Tasks_20" #change the folder name as 10, 20, 30, etc. based on the number of tasks
+fixed_num_tasks = 30 #change a
+fixed_num_processors = 10
+num_freqs_per_processor = 10  # number of frequency levels per processor
+fixed_proc_dir = "Tasks_30" #change the folder name as 10, 20, 30, etc. based on the number of tasks
 os.makedirs(fixed_proc_dir, exist_ok=True)
 
 # === Shared Frequency Pool (same for all processors)
