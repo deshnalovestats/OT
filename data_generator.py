@@ -5,7 +5,7 @@ import random
 # === Settings ===
 num_instances_required = 50
 fixed_num_tasks = 20 #change a
-fixed_num_processors = 10
+fixed_num_processors = 5
 num_freqs_per_processor = 5  # number of frequency levels per processor
 fixed_proc_dir = "Tasks_20_5" #change the folder name as 10, 20, 30, etc. based on the number of tasks
 os.makedirs(fixed_proc_dir, exist_ok=True)
@@ -15,14 +15,21 @@ shared_freq_pool = sorted({round(i * 0.1, 1) for i in range(1, 11)})  # 0.1 to 1
 print("Shared Frequency Pool:", shared_freq_pool)
 
 # === Helper Functions ===
+def generate_random_period():
+    return random.choice([i for i in range(50, 100, 50)])
+
 def generate_tasks(n):
     tasks = []
     for i in range(n):
-        period = random.randint(10, 50)
-        cm = random.randint(1, int(0.4 * period))  # discrete cm
-        co = random.randint(1, int(0.3 * period))  # discrete co
+        # period = random.randint(10, 50)
+        period = generate_random_period()
+        # cm = random.randint(1, int(0.4 * period))  # discrete cm
+        # co = random.randint(1, int(0.3 * period))  # discrete co
+
+        cm = round(random.uniform(1, 20), 2)
+        co = round(random.uniform(1, 15), 2)
         tasks.append({
-            "id": i + 1,
+            "id": i+1 ,
             "period": period,
             "cm": cm,
             "co": co
