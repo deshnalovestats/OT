@@ -28,11 +28,11 @@ from CustJobLevelMutation import JobLevelMutation
 
 def create_sample_system():
     """Create a sample system for testing"""
-    json_file = 'sample_data/instance_000.json'
+    json_file = 'Tasks_10/instance_fixedproc_001.json'
     with open(json_file, 'r') as f:
         data = json.load(f)
 
-    tasks = [Task(t["id"], t["c_m"], t["c_o"], t["p"]) for t in data["tasks"]]
+    tasks = [Task(t["id"], t["cm"], t["co"], t["period"]) for t in data["tasks"]]
     processors = [Processor(p["id"], p["frequencies"]) for p in data["processors"]]
     
     return tasks, processors
