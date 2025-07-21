@@ -1,13 +1,14 @@
 from pymoo.core.crossover import Crossover
 import numpy as np
 from tabulate import tabulate
+from logging_config import LoggingFlags, log_if
 
 class JobLevelUniformCrossover(Crossover):
     def __init__(self, **kwargs):
         """
         Job-level uniform crossover operator.
         """
-        super().__init__(2, 2, **kwargs)  # 2 parents → 2 children
+        super().__init__(2, 2, **kwargs)
 
     def _do(self, problem, X, **kwargs):
         """
@@ -27,15 +28,15 @@ class JobLevelUniformCrossover(Crossover):
         """
         _, n_matings, n_var = X.shape
         bits_per_job = problem.bits_per_job
-        n_jobs = n_var // bits_per_job  # Calculate the number of jobs
+        n_jobs = n_var // bits_per_job
 
-        # Initialize offspring
         Y = np.empty_like(X)
+
+        log_if(LoggingFlags.CROSSOVER_DETAILS, f"Performing crossover on {n_matings} mating pairs")
 
         for k in range(n_matings):
             parent1, parent2 = X[0, k], X[1, k]
 
-            # Perform job-level uniform crossover
             child1 = np.zeros_like(parent1)
             child2 = np.zeros_like(parent2)
 
@@ -43,25 +44,22 @@ class JobLevelUniformCrossover(Crossover):
                 start = job_idx * bits_per_job
                 end = start + bits_per_job
 
-                # Random coin toss for each job
                 if np.random.rand() < 0.5:
-                    # Take job block from Parent 1 for Child 1, Parent 2 for Child 2
                     child1[start:end] = parent1[start:end]
                     child2[start:end] = parent2[start:end]
                 else:
-                    # Take job block from Parent 2 for Child 1, Parent 1 for Child 2
                     child1[start:end] = parent2[start:end]
                     child2[start:end] = parent1[start:end]
 
-            # Store the children
             Y[0, k] = child1
             Y[1, k] = child2
 
+            log_if(LoggingFlags.CROSSOVER_DETAILS, f"Crossover pair {k+1} completed")
             # Print parents and children in tabular format
             # self._print_crossover_results(parent1, parent2, child1, child2, k)
 
         return Y
-
+    
     def _print_crossover_results(self, parent1, parent2, child1, child2, mating_index):
         """
         Print the parents and children in a tabular format with binary representation.

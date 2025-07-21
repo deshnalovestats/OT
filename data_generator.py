@@ -5,10 +5,10 @@ import math
 
 # === Settings ===
 num_instances_required = 50
-fixed_num_tasks = 20
+fixed_num_tasks = 10
 fixed_num_processors = 5
 num_freqs_per_processor = 5
-fixed_proc_dir = "Tasks_20_5"
+fixed_proc_dir = "Tasks_10"
 os.makedirs(fixed_proc_dir, exist_ok=True)
 
 # === Normalized Frequency Pool (0.1 = 10% performance, 1.0 = 100% performance)
@@ -169,7 +169,7 @@ while valid_count < num_instances_required and attempt < max_attempts:
     # Very relaxed quality checks
     if min_util < 0.1:  # Too trivial
         continue
-    if max_util > fixed_num_processors * 4.0:  # Still too tight
+    if max_util > fixed_num_processors * 0.95:  # Still too tight
         continue
     
     # Save the instance

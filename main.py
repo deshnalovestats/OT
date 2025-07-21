@@ -28,7 +28,8 @@ from CustJobLevelMutation import JobLevelMutation
 
 def create_sample_system():
     """Create a sample system for testing"""
-    json_file = 'Tasks_20_5/instance_fixedproc_001.json'
+    json_file = 'Tasks_30/instance_fixedproc_032.json'
+    # json_file = 'sample_data/deshna_test.json'
     with open(json_file, 'r') as f:
         data = json.load(f)
 

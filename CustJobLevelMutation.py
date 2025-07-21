@@ -1,5 +1,6 @@
 from pymoo.core.mutation import Mutation
 import numpy as np
+from logging_config import LoggingFlags, log_if
 
 class JobLevelMutation(Mutation):
     def __init__(self, prob=0.1):
@@ -15,11 +16,14 @@ class JobLevelMutation(Mutation):
         bits_per_job = problem.bits_per_job
 
         X_mut = X.copy()
+        mutations_count = 0
+
+        log_if(LoggingFlags.MUTATION_DETAILS, f"Starting mutation on {n_individuals} individuals")
 
         for i in range(n_individuals):
+            individual_mutations = 0
             for j in range(n_jobs):
                 if np.random.rand() < self.prob:
-                    # Mutate processor/frequency/optional
                     proc_id = np.random.randint(0, n_processors)
                     freq_id = np.random.randint(0, len(problem.processors[proc_id].frequencies))
                     opt_bit = np.random.randint(0, 2)
@@ -32,5 +36,11 @@ class JobLevelMutation(Mutation):
                     end = start + bits_per_job
                     new_bits = [int(b) for b in proc_bits + freq_bits + opt_bit_str]
                     X_mut[i, start:end] = new_bits
+                    
+                    individual_mutations += 1
+                    mutations_count += 1
+            
+            log_if(LoggingFlags.MUTATION_DETAILS, f"Individual {i}: {individual_mutations} mutations")
 
+        log_if(LoggingFlags.MUTATION_DETAILS, f"Total mutations: {mutations_count}")
         return X_mut
