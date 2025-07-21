@@ -5,6 +5,7 @@ from pymoo.optimize import minimize
 from pymoo.visualization.scatter import Scatter
 import matplotlib.pyplot as plt
 import os
+from visualisation import *
 
 # Import with logging
 from test import EnergyPerformanceOptimizationProblem, Task, Processor
@@ -44,11 +45,19 @@ def run_nsga2_optimization(json_file: str, n_generations: int = 100, pop_size: i
     
     # Load data
     tasks, processors = load_test_data(json_file)
+
+    log_if(LoggingFlags.OPTIMIZATION_PROGRESS, f"System configuration:")
+    log_if(LoggingFlags.OPTIMIZATION_PROGRESS, f"- Tasks: {len(tasks)}")
+    log_if(LoggingFlags.OPTIMIZATION_PROGRESS, f"- Processors: {len(processors)}")
     
     # Create problem
     log_if(LoggingFlags.OPTIMIZATION_PROGRESS, "Creating optimization problem...")
     problem = EnergyPerformanceOptimizationProblem(tasks, processors)
-    
+
+    log_if(LoggingFlags.OPTIMIZATION_PROGRESS, f"- Jobs in hyperperiod: {problem.n_jobs}")
+    log_if(LoggingFlags.OPTIMIZATION_PROGRESS, f"- Decision variables: {problem.n_var}")
+    log_if(LoggingFlags.OPTIMIZATION_PROGRESS, f"- Hyperperiod: {problem.hyperperiod}")
+
     # Configure algorithm
     algorithm = configure_nsga2(pop_size)
     
@@ -69,66 +78,169 @@ def run_nsga2_optimization(json_file: str, n_generations: int = 100, pop_size: i
     
     return result, problem
 
-def visualize_results(result, problem, title: str = "NSGA2 Results"):
+def visualize_results(result, problem, save_dir):
     """Create and save visualizations"""
     if len(result.F) == 0:
         log_if(LoggingFlags.SOLUTION_ANALYSIS, "No solutions to visualize")
         return
     
     # Create results directory
-    os.makedirs("nsga2_results", exist_ok=True)
-    
-    # Pareto front plot
-    plt.figure(figsize=(10, 8))
-    plt.scatter(result.F[:, 0], result.F[:, 1], c='blue', s=50, alpha=0.7)
-    plt.xlabel('Normalized Energy Consumption')
-    plt.ylabel('Normalized Performance Penalty')
-    plt.title(f'{title} - Pareto Front')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig('nsga2_results/pareto_front.png', dpi=300, bbox_inches='tight')
-    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Pareto front saved to nsga2_results/pareto_front.png")
-    plt.close()
-    
-    # Statistics
-    if len(result.F) > 0:
-        energy_vals = result.F[:, 0]
-        penalty_vals = result.F[:, 1]
-        
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n=== NSGA2 Results Summary ===")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Number of solutions: {len(result.F)}")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Energy range: [{np.min(energy_vals):.4f}, {np.max(energy_vals):.4f}]")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Performance range: [{np.min(penalty_vals):.4f}, {np.max(penalty_vals):.4f}]")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Best energy: {np.min(energy_vals):.4f}")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Best performance: {np.min(penalty_vals):.4f}")
+    os.makedirs(save_dir, exist_ok=True)
 
-def analyze_best_solutions(result, problem):
-    """Analyze the best energy and performance solutions"""
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n{'='*60}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"GENERATING VISUALIZATIONS")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{'='*60}")
+    
+    # 1. Pareto front visualization
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Creating Pareto front visualization...")
+    visualize_pareto_front(result, "NSGA2", save_dir=save_dir)
+
+    # 2. Hypervolume and diversity analysis
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Analyzing hypervolume and spread...")
+    analyze_hypervolume_and_spread(result, "NSGA2", save_dir=save_dir)
+    
+    # 3. Pareto front summary table
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Generating Pareto front summary table...")
+    summarize_pareto_table(result, "NSGA2", save_dir=save_dir)
+
+    # 4. Multiple runs boxplot comparison
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Running multiple optimization runs for statistical analysis...")
+    try:
+        # Get algorithm configuration for multiple runs
+        algorithm_class = NSGA2
+        algorithm_params = {
+            'pop_size': 100,
+            'sampling': FeasibleBinarySampling(),
+            'crossover': JobLevelUniformCrossover(),
+            'mutation': JobLevelMutation(prob=0.2),
+            'eliminate_duplicates': True
+        }
+        multiple_runs_boxplot(problem, "NSGA2", algorithm_params, algorithm_class, n_runs=1, n_gen=100, save_dir=save_dir)
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, "Multiple runs analysis completed")
+    except Exception as e:
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Warning: Multiple runs analysis failed: {e}")
+    
+    # 5. Pareto front evolution animation
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Creating Pareto front evolution animation...")
+    try:
+        animate_pareto_front(result, save_dir=save_dir)
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, "Pareto evolution animation saved")
+    except Exception as e:
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Warning: Animation creation failed: {e}")
+
+
+
+
+def analyze_solution(solution_idx: int, result, problem, solution_type: str = "Solution", solution_name: str = None):
+    """Analyze a specific solution from the Pareto front with logging"""
+    if solution_idx >= len(result.X):
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Invalid solution index. Available solutions: 0-{len(result.X)-1}")
+        return None
+    
+    x = result.X[solution_idx]
+    assignments = problem._decode_solution(x)
+    if solution_name is None:
+        solution_name = f"{solution_type} {solution_idx + 1}"
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\nAnalysis of {solution_name}:")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Normalized Energy: {result.F[solution_idx, 0]:.4f}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Normalized Performance Penalty: {result.F[solution_idx, 1]:.4f}")
+    
+    # Calculate actual values
+    energy = problem._calculate_energy(assignments)
+    penalty = problem._calculate_performance_penalty(assignments)
+    
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Actual Energy Consumption: {energy:.2f}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Actual Performance Penalty: {penalty:.2f}")
+    
+    # Count optional executions by task
+    task_optional_counts = {}
+    task_total_counts = {}
+    for task in problem.tasks:
+        task_optional_counts[task.id] = 0
+        task_total_counts[task.id] = 0
+    
+    for i, assignment in enumerate(assignments):
+        job = problem.jobs[i]
+        task_id = job['task_id']
+        task_total_counts[task_id] += 1
+        if assignment['execute_optional']:
+            task_optional_counts[task_id] += 1
+    
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\nOptional Execution Statistics:")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Task ID | Total Jobs | Optional Executed | Percentage")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "-" * 50)
+    for task in problem.tasks:
+        total = task_total_counts[task.id]
+        executed = task_optional_counts[task.id]
+        percentage = (executed / total) * 100 if total > 0 else 0
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{task.id:7d} | {total:10d} | {executed:17d} | {percentage:8.1f}%")
+    
+    # Show processor utilization
+    processor_loads = {p.id: 0 for p in problem.processors}
+    processor_job_counts = {p.id: 0 for p in problem.processors}
+    
+    for i, assignment in enumerate(assignments):
+        job = problem.jobs[i]
+        exec_time = job['c_m']
+        if assignment['execute_optional']:
+            exec_time += job['c_o']
+        actual_exec_time = exec_time / assignment['frequency']
+        processor_loads[assignment['processor_id']] += actual_exec_time
+        processor_job_counts[assignment['processor_id']] += 1
+    
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\nProcessor Utilization:")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "Processor | Jobs Assigned | Total Load | Utilization")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, "-" * 48)
+    total_system_load = 0
+    for proc_id in range(problem.n_processors):
+        load = processor_loads[proc_id]
+        job_count = processor_job_counts[proc_id]
+        utilization = (load / problem.hyperperiod) * 100
+        total_system_load += load
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{proc_id:9d} | {job_count:13d} | {load:10.2f} | {utilization:10.2f}%")
+    
+    avg_utilization = (total_system_load / (problem.n_processors * problem.hyperperiod)) * 100
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Average system utilization: {avg_utilization:.2f}%")
+    
+    # Check if solution is feasible
+    is_feasible = problem._check_timing_constraints(assignments)
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\nSolution Feasibility: {'✓ FEASIBLE' if is_feasible else '✗ INFEASIBLE'}")
+    
+    return assignments
+
+def analyze_best_solutions(result, problem, save_dir):
+    """Analyze the best energy and performance solutions with detailed analysis"""
     if len(result.F) == 0:
         return
     
-    # Best energy solution
+    # Find best solutions
     best_energy_idx = np.argmin(result.F[:, 0])
-    assignments = problem._decode_solution(result.X[best_energy_idx])
-    
-    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n=== Best Energy Solution ===")
-    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Energy: {result.F[best_energy_idx, 0]:.4f}")
-    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Performance: {result.F[best_energy_idx, 1]:.4f}")
-    
-    # Count optional executions
-    optional_count = sum(1 for assign in assignments if assign['execute_optional'])
-    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Optional executions: {optional_count}/{len(assignments)}")
-    
-    # Best performance solution (if different)
     best_perf_idx = np.argmin(result.F[:, 1])
+    
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n{'='*80}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"DETAILED ANALYSIS OF BEST SOLUTIONS")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{'='*80}")
+    
+    # Analyze best energy solution
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n{'='*60}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"BEST ENERGY SOLUTION")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{'='*60}")
+    assignments_energy = analyze_solution(best_energy_idx, result, problem, solution_name="Best Energy Solution")
+    visualize_schedule(assignments_energy, problem, f"Best Energy", save_dir=save_dir)
+    visualize_processor_utilization(assignments_energy, problem, f"Best Energy", save_dir=save_dir)
+
+    
+    # Check if performance solution is different
     if best_perf_idx != best_energy_idx:
-        assignments_perf = problem._decode_solution(result.X[best_perf_idx])
-        optional_count_perf = sum(1 for assign in assignments_perf if assign['execute_optional'])
-        
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n=== Best Performance Solution ===")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Energy: {result.F[best_perf_idx, 0]:.4f}")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Performance: {result.F[best_perf_idx, 1]:.4f}")
-        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Optional executions: {optional_count_perf}/{len(assignments_perf)}")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n{'='*60}")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"BEST PERFORMANCE SOLUTION")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{'='*60}")
+        analyze_solution(best_perf_idx, result, problem, solution_name="Best Performance Solution")
+        visualize_schedule(assignments_energy, problem, f"Best Performance", save_dir=save_dir)
+        visualize_processor_utilization(assignments_energy, problem, f"Best Performance", save_dir=save_dir)
+    else:
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Note: Best energy and best performance solutions are the same!")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"This indicates a dominant solution that excels in both objectives.")
 
 def main():
     """Main driver function"""
@@ -171,8 +283,8 @@ def main():
         visualize_results(result, problem)
         analyze_best_solutions(result, problem)
         
-        log_if(LoggingFlags.MAIN_MENU, "\nOptimization completed successfully!")
-        log_if(LoggingFlags.MAIN_MENU, "Results saved in nsga2_results/ directory")
+        log_if(LoggingFlags.MAIN_MENU, "\n Visualisation and Analysis completed successfully!")
+        log_if(LoggingFlags.MAIN_MENU, "Results saved in nsga2_results/")
         
     except FileNotFoundError:
         print(f"Error: File {json_file} not found")

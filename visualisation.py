@@ -8,6 +8,8 @@ from pymoo.optimize import minimize
 import imageio # type: ignore
 import pandas as pd
 from pymoo.vendor.hv import HyperVolume 
+from logging_config import LoggingFlags, log_if
+import random
 
 def visualize_pareto_front(result, algorithm_name: str, save_dir: str = "results"):
     """Create comprehensive Pareto front visualization"""
@@ -19,7 +21,7 @@ def visualize_pareto_front(result, algorithm_name: str, save_dir: str = "results
     fig.suptitle(f'Pareto Front Analysis - {algorithm_name}', fontsize=16, fontweight='bold')
     
     if len(result.F) == 0:
-        print("No solutions to visualize!")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, "No solutions to visualize!")
         return
     
     energy_vals = result.F[:, 0]
@@ -88,7 +90,7 @@ def visualize_pareto_front(result, algorithm_name: str, save_dir: str = "results
     
     plt.tight_layout()
     plt.savefig(f'{save_dir}/pareto_analysis_{algorithm_name.lower()}.png', dpi=300, bbox_inches='tight')
-    print(f"Pareto front analysis saved as '{save_dir}/pareto_analysis_{algorithm_name.lower()}.png'")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Pareto front analysis saved as '{save_dir}/pareto_analysis_{algorithm_name.lower()}.png'")
     plt.close()
 
 def visualize_schedule(assignments: List[Dict], problem: EnergyPerformanceOptimizationProblem, 
@@ -206,7 +208,7 @@ def visualize_schedule(assignments: List[Dict], problem: EnergyPerformanceOptimi
     plt.tight_layout()
     plt.savefig(f'{save_dir}/schedule_{solution_name.lower().replace(" ", "_")}.png', 
                 dpi=300, bbox_inches='tight')
-    print(f"Schedule visualization saved as '{save_dir}/schedule_{solution_name.lower().replace(' ', '_')}.png'")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Schedule visualization saved as '{save_dir}/schedule_{solution_name.lower().replace(' ', '_')}.png'")
     plt.close()
 
 def visualize_processor_utilization(assignments: List[Dict], problem: EnergyPerformanceOptimizationProblem,
@@ -324,13 +326,13 @@ def visualize_processor_utilization(assignments: List[Dict], problem: EnergyPerf
     plt.tight_layout()
     plt.savefig(f'{save_dir}/processor_analysis_{solution_name.lower().replace(" ", "_")}.png',
                 dpi=300, bbox_inches='tight')
-    print(f"Processor analysis saved as '{save_dir}/processor_analysis_{solution_name.lower().replace(' ', '_')}.png'")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Processor analysis saved as '{save_dir}/processor_analysis_{solution_name.lower().replace(' ', '_')}.png'")
     plt.close()
 
 def analyze_hypervolume_and_spread(result, algorithm_name: str, ref_point=[1.2, 1.2], save_dir: str = "results"):
     """Analyze and plot hypervolume and diversity (spread) progress over generations."""
     if not hasattr(result, "history") or not result.history:
-        print("No generation history available for hypervolume/diversity analysis.")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, "No generation history available for hypervolume/diversity analysis.")
         return None, None
 
     if not os.path.exists(save_dir):
@@ -365,7 +367,7 @@ def analyze_hypervolume_and_spread(result, algorithm_name: str, ref_point=[1.2, 
     plt.tight_layout()
     save_path = os.path.join(save_dir, f"hv_spread_{algorithm_name.lower().replace(' ', '_')}.png")
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    print(f"Hypervolume and diversity progress saved as '{save_path}'")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Hypervolume and diversity progress saved as '{save_path}'")
     plt.close()
 
     return hypervolume_progress, spread_progress
@@ -373,7 +375,7 @@ def analyze_hypervolume_and_spread(result, algorithm_name: str, ref_point=[1.2, 
 def summarize_pareto_table(result, algorithm_name: str, save_dir: str = "results"):
     """Print and save a summary table of the Pareto front."""
     if not hasattr(result, "F") or len(result.F) == 0:
-        print("No Pareto front solutions to summarize.")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, "No Pareto front solutions to summarize.")
         return None
 
     summary = []
@@ -384,14 +386,14 @@ def summarize_pareto_table(result, algorithm_name: str, save_dir: str = "results
             'Performance': result.F[i, 1]
         })
     df = pd.DataFrame(summary)
-    print(f"\nPareto Front Summary for {algorithm_name}:")
-    print(df.to_string(index=False, float_format='%.4f'))
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\nPareto Front Summary for {algorithm_name}:")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, df.to_string(index=False, float_format='%.4f'))
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, f"pareto_summary_{algorithm_name.lower().replace(' ', '_')}.csv")
     df.to_csv(save_path, index=False)
-    print(f"Pareto front summary saved as '{save_path}'")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Pareto front summary saved as '{save_path}'")
     return df
 
 def multiple_runs_boxplot(problem, algorithm_name, algorithm_params, algorithm_class, n_runs=20, n_gen=100, save_dir="results"):
@@ -403,9 +405,9 @@ def multiple_runs_boxplot(problem, algorithm_name, algorithm_params, algorithm_c
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    print(f"\n{'='*60}")
-    print(f"Running {n_runs} runs for {algorithm_name} to analyze hypervolume distribution")
-    print(f"{'='*60}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"\n{'='*60}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Running {n_runs} runs for {algorithm_name} to analyze hypervolume distribution")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"{'='*60}")
 
     for seed in range(n_runs):
         np.random.seed(seed)
@@ -414,7 +416,7 @@ def multiple_runs_boxplot(problem, algorithm_name, algorithm_params, algorithm_c
         result = minimize(problem, algorithm, ('n_gen', n_gen), verbose=False)
         hv_val = hv.compute(result.F)
         hv_values.append(hv_val)
-        print(f"  Run {seed+1}/{n_runs}: Hypervolume = {hv_val:.4f}")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, f"  Run {seed+1}/{n_runs}: Hypervolume = {hv_val:.4f}")
 
     plt.boxplot(hv_values)
     plt.title(f"Hypervolume Boxplot over {n_runs} seeds ({algorithm_name})")
@@ -422,7 +424,7 @@ def multiple_runs_boxplot(problem, algorithm_name, algorithm_params, algorithm_c
     plt.grid()
     save_path = os.path.join(save_dir, f"hv_boxplot_{algorithm_name.lower().replace(' ', '_')}.png")
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    print(f"Hypervolume boxplot saved as '{save_path}'")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Hypervolume boxplot saved as '{save_path}'")
     plt.close()
 
     return hv_values
@@ -431,7 +433,7 @@ def animate_pareto_front(result, savefile="pareto_evolution.gif", save_dir="resu
     """Create and save an animation of Pareto front evolution over generations."""
     import imageio
     if not hasattr(result, "history") or not result.history:
-        print("No generation history available for animation.")
+        log_if(LoggingFlags.SOLUTION_ANALYSIS, "No generation history available for animation.")
         return
 
     if not os.path.exists(save_dir):
@@ -459,4 +461,4 @@ def animate_pareto_front(result, savefile="pareto_evolution.gif", save_dir="resu
     # cleanup
     for fname in tmp_files:
         os.remove(fname)
-    print(f"Saved Pareto front evolution animation to {gif_path}")
+    log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Saved Pareto front evolution animation to {gif_path}")
