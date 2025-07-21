@@ -50,21 +50,21 @@ class LogCapture:
     def close(self):
         self.log_file.close()
 
-# def get_all_instances(base_folders=['Tasks_10', 'Tasks_20', 'Tasks_30']):
-#     """Get all JSON instance files from the specified folders"""
-#     all_instances = []
+def get_all_instances(base_folders=['Tasks_10', 'Tasks_20', 'Tasks_30']):
+    """Get all JSON instance files from the specified folders"""
+    all_instances = []
     
-#     for folder in base_folders:
-#         if os.path.exists(folder):
-#             json_files = [f for f in os.listdir(folder) if f.endswith('.json')]
-#             for json_file in sorted(json_files):
-#                 instance_path = os.path.join(folder, json_file)
-#                 all_instances.append((folder, json_file, instance_path))
-#             log_if(LoggingFlags.MAIN_MENU, f"Found {len(json_files)} instances in {folder}")
-#         else:
-#             log_if(LoggingFlags.MAIN_MENU, f"Warning: Folder {folder} not found!")
+    for folder in base_folders:
+        if os.path.exists(folder):
+            json_files = [f for f in os.listdir(folder) if f.endswith('.json')]
+            for json_file in sorted(json_files):
+                instance_path = os.path.join(folder, json_file)
+                all_instances.append((folder, json_file, instance_path))
+            log_if(LoggingFlags.MAIN_MENU, f"Found {len(json_files)} instances in {folder}")
+        else:
+            log_if(LoggingFlags.MAIN_MENU, f"Warning: Folder {folder} not found!")
     
-#     return all_instances
+    return all_instances
 
 def run_single_instance(instance_path, output_dir, n_generations=100, pop_size=100):
     """Run optimization for a single instance with comprehensive logging and error handling"""
@@ -146,20 +146,18 @@ def run_single_instance(instance_path, output_dir, n_generations=100, pop_size=1
                 'error_type': None
             }
             
-        except Exception as opt_error:
+        except ValueError as val_error:
             opt_end_time = time.time()
             optimization_time = opt_end_time - opt_start_time
-            
-            error_msg = str(opt_error)
-            if "repair" in error_msg.lower() or "max" in error_msg.lower() and "attempt" in error_msg.lower():
-                log_if(LoggingFlags.MAIN_MENU, f"\nREPAIR FAILURE: {error_msg}")
-                log_if(LoggingFlags.MAIN_MENU, f"Instance will be flagged due to repair issues.")
+
+            error_msg = str(val_error)
+
+            if "Unable to generate enough feasible solutions" in error_msg:
+                log_if(LoggingFlags.MAIN_MENU, f"\nREPAIR FAILURE - FEASIBILITY ISSUE:")
+                log_if(LoggingFlags.MAIN_MENU, f"Error: {error_msg}")
+                log_if(LoggingFlags.MAIN_MENU, f"Instance flagged as having repair/feasibility issues.")
+                log_if(LoggingFlags.MAIN_MENU, f"This indicates the problem constraints are too tight or the instance is infeasible.")
                 error_type = 'repair_failure'
-            else:
-                log_if(LoggingFlags.MAIN_MENU, f"\nOPTIMIZATION ERROR: {error_msg}")
-                log_if(LoggingFlags.MAIN_MENU, f"Traceback:")
-                traceback.print_exc()
-                error_type = 'optimization_error'
             
             return {
                 'success': False,
@@ -172,7 +170,6 @@ def run_single_instance(instance_path, output_dir, n_generations=100, pop_size=1
     
     except Exception as e:
         log_if(LoggingFlags.MAIN_MENU, f"\nGENERAL ERROR: {str(e)}")
-        log_if(LoggingFlags.MAIN_MENU, f"Traceback:")
         traceback.print_exc()
         return {
             'success': False,
@@ -188,8 +185,8 @@ def run_single_instance(instance_path, output_dir, n_generations=100, pop_size=1
         sys.stdout = original_stdout
         log_capture.close()
 
-def run_batch_optimization(base_folders=['Tasks_10', 'Tasks_20', 'Tasks_30'], 
-                          n_generations=50, pop_size=100):
+def run_all_instances(base_folders=['Tasks_10', 'Tasks_20', 'Tasks_30'], 
+                          n_generations=100, pop_size=100):
     """Run batch optimization on all instances"""
     
     # Configure logging
@@ -229,7 +226,7 @@ def run_batch_optimization(base_folders=['Tasks_10', 'Tasks_20', 'Tasks_30'],
         
         # Create output directory structure
         instance_name = os.path.splitext(filename)[0]
-        output_dir = os.path.join(results_dir, folder, instance_name)
+        output_dir = os.path.join(results_dir, folder, instance_name).replace("data/"," ")
         
         # Run optimization for this instance
         result = run_single_instance(
@@ -339,21 +336,13 @@ def run_batch_optimization(base_folders=['Tasks_10', 'Tasks_20', 'Tasks_30'],
 
 if __name__ == "__main__":
     # Configuration
-    folders_to_process = ['Tasks_10', 'Tasks_20', 'Tasks_30']
+    folders_to_process = ['data/Tasks_10']
     generations = 100
     population_size = 100
 
-    # Check single instance run
-    run_single_instance(
-        instance_path='data/Tasks_10/instance_fixedproc_001.json',
-        output_dir='nsga2_results/Tasks_10/instance_fixedproc_001.json',
+    # Run batch optimization
+    run_all_instances(
+        base_folders=folders_to_process,
         n_generations=generations,
         pop_size=population_size
     )
-    
-    # # Run batch optimization
-    # run_batch_optimization(
-    #     base_folders=folders_to_process,
-    #     n_generations=generations,
-    #     pop_size=population_size
-    # )
