@@ -115,7 +115,7 @@ def visualize_results(result, problem, save_dir):
             'mutation': JobLevelMutation(prob=0.2),
             'eliminate_duplicates': True
         }
-        multiple_runs_boxplot(problem, "NSGA2", algorithm_params, algorithm_class, n_runs=1, n_gen=100, save_dir=save_dir)
+        multiple_runs_boxplot(problem, "NSGA2", algorithm_params, algorithm_class, n_runs=20, n_gen=100, save_dir=save_dir)
         log_if(LoggingFlags.SOLUTION_ANALYSIS, "Multiple runs analysis completed")
     except Exception as e:
         log_if(LoggingFlags.SOLUTION_ANALYSIS, f"Warning: Multiple runs analysis failed: {e}")

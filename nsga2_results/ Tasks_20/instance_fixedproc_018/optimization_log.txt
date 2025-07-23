@@ -1,0 +1,302 @@
+Running NSGA-II on instance: instance_fixedproc_018
+Loading data from data/Tasks_20/instance_fixedproc_018.json
+Loaded 20 tasks and 5 processors
+System configuration:
+- Tasks: 20
+- Processors: 5
+Creating optimization problem...
+Problem initialized: 20 tasks, 5 processors, 501 jobs
+- Jobs in hyperperiod: 501
+- Decision variables: 3507
+- Hyperperiod: 3000.0
+NSGA2 configured with population size: 100
+Starting NSGA2 optimization for 100 generations...
+==========================================================
+n_gen  |  n_eval  | n_nds  |      eps      |   indicator  
+==========================================================
+     1 |      100 |      6 |             - |             -
+     2 |      200 |      7 |  0.4971606190 |         ideal
+     3 |      300 |      3 |  0.1774030509 |             f
+     4 |      400 |      6 |  0.0374543045 |         ideal
+     5 |      500 |      6 |  0.1929148591 |         ideal
+     6 |      600 |     10 |  0.0841529999 |         ideal
+     7 |      700 |     10 |  0.1114262627 |         ideal
+     8 |      800 |     12 |  0.0359396914 |         ideal
+     9 |      900 |     15 |  0.0453087579 |         ideal
+    10 |     1000 |     14 |  0.0155351330 |         ideal
+    11 |     1100 |     17 |  0.1174749268 |         ideal
+    12 |     1200 |     16 |  0.0414015774 |             f
+    13 |     1300 |     19 |  0.0263862549 |             f
+    14 |     1400 |     17 |  0.0228668326 |             f
+    15 |     1500 |     20 |  0.0176388630 |             f
+    16 |     1600 |     17 |  0.0921724826 |         ideal
+    17 |     1700 |     15 |  0.0341322824 |             f
+    18 |     1800 |     13 |  0.0367957475 |             f
+    19 |     1900 |     14 |  0.0406311121 |         ideal
+    20 |     2000 |     14 |  0.0690768836 |         ideal
+    21 |     2100 |     11 |  0.0426277249 |             f
+    22 |     2200 |     10 |  0.0516095016 |         ideal
+    23 |     2300 |     11 |  0.0936268301 |         ideal
+    24 |     2400 |     18 |  0.0722963194 |         ideal
+    25 |     2500 |     17 |  0.0822314403 |         ideal
+    26 |     2600 |     16 |  0.0202739340 |             f
+    27 |     2700 |     16 |  0.0464929312 |         ideal
+    28 |     2800 |     18 |  0.0258451918 |         ideal
+    29 |     2900 |     12 |  0.0409466990 |         ideal
+    30 |     3000 |      9 |  0.0115017886 |         ideal
+    31 |     3100 |     12 |  0.0416714615 |             f
+    32 |     3200 |     15 |  0.0416495140 |             f
+    33 |     3300 |     16 |  0.0251280244 |             f
+    34 |     3400 |     17 |  0.2084946041 |         ideal
+    35 |     3500 |     19 |  0.0240414122 |             f
+    36 |     3600 |     17 |  0.0292804510 |             f
+    37 |     3700 |     14 |  0.0128906077 |         ideal
+    38 |     3800 |     17 |  0.0188121760 |             f
+    39 |     3900 |     14 |  0.1107073601 |         ideal
+    40 |     4000 |     16 |  0.0248264806 |             f
+    41 |     4100 |     21 |  0.0861978924 |         ideal
+    42 |     4200 |     21 |  0.0139989036 |             f
+    43 |     4300 |     23 |  0.0240029529 |             f
+    44 |     4400 |     22 |  0.0181576124 |         ideal
+    45 |     4500 |     17 |  0.0041960190 |         ideal
+    46 |     4600 |     21 |  0.0832361888 |         ideal
+    47 |     4700 |     19 |  0.0912358529 |         ideal
+    48 |     4800 |     16 |  0.0311335547 |             f
+    49 |     4900 |     18 |  0.0169337058 |             f
+    50 |     5000 |     16 |  0.0107681991 |         ideal
+    51 |     5100 |     13 |  0.0280703559 |             f
+    52 |     5200 |     15 |  0.0297269950 |             f
+    53 |     5300 |     20 |  0.0280009436 |             f
+    54 |     5400 |     21 |  0.1055756168 |         ideal
+    55 |     5500 |     21 |  0.0459975865 |         ideal
+    56 |     5600 |     16 |  0.0216638952 |         ideal
+    57 |     5700 |     17 |  0.0352292649 |             f
+    58 |     5800 |     20 |  0.0211467273 |         ideal
+    59 |     5900 |     19 |  0.0153519104 |             f
+    60 |     6000 |     16 |  0.0270885609 |         ideal
+    61 |     6100 |     15 |  0.0517175290 |         ideal
+    62 |     6200 |     17 |  0.0261999966 |         ideal
+    63 |     6300 |     17 |  0.0388806549 |         ideal
+    64 |     6400 |     16 |  0.0650458473 |         ideal
+    65 |     6500 |     22 |  0.0825727044 |         nadir
+    66 |     6600 |     15 |  0.0527763313 |             f
+    67 |     6700 |     18 |  0.0387431700 |         ideal
+    68 |     6800 |     18 |  0.0282585177 |         ideal
+    69 |     6900 |     14 |  0.0078877430 |         ideal
+    70 |     7000 |     18 |  0.0587100369 |         ideal
+    71 |     7100 |     22 |  0.0715505830 |         ideal
+    72 |     7200 |     22 |  0.0198254194 |         ideal
+    73 |     7300 |     19 |  0.0052971177 |         ideal
+    74 |     7400 |     25 |  0.0134636320 |         ideal
+    75 |     7500 |     26 |  0.0389877887 |         ideal
+    76 |     7600 |     26 |  0.0033341596 |         ideal
+    77 |     7700 |     27 |  0.0131432002 |             f
+    78 |     7800 |     32 |  0.0540574019 |         ideal
+    79 |     7900 |     30 |  0.0078174322 |         ideal
+    80 |     8000 |     24 |  0.0222947304 |         ideal
+    81 |     8100 |     22 |  0.0125434106 |             f
+    82 |     8200 |     26 |  0.0156816285 |             f
+    83 |     8300 |     25 |  0.0118103763 |         ideal
+    84 |     8400 |     28 |  0.0091530557 |         ideal
+    85 |     8500 |     35 |  0.0251064771 |         ideal
+    86 |     8600 |     30 |  0.0144195206 |         ideal
+    87 |     8700 |     23 |  0.0028340964 |         ideal
+    88 |     8800 |     26 |  0.0537955444 |         ideal
+    89 |     8900 |     26 |  0.0099909376 |             f
+    90 |     9000 |     24 |  0.0193601997 |         ideal
+    91 |     9100 |     22 |  0.0164825406 |             f
+    92 |     9200 |     26 |  0.0126773034 |         nadir
+    93 |     9300 |     27 |  0.0296352923 |         ideal
+    94 |     9400 |     25 |  0.0185125280 |         ideal
+    95 |     9500 |     27 |  0.0073510056 |             f
+    96 |     9600 |     22 |  0.0852594263 |         nadir
+    97 |     9700 |     21 |  0.0655714224 |         ideal
+    98 |     9800 |     25 |  0.0142387282 |             f
+    99 |     9900 |     31 |  0.0134204854 |         ideal
+   100 |    10000 |     32 |  0.0096850869 |             f
+Optimization completed!
+Pareto front size: 32
+
+Optimization completed successfully!
+Optimization time: 56.24 seconds
+Number of solutions in Pareto front: 32
+Pareto solutions saved to: nsga2_results/ Tasks_20/instance_fixedproc_018/pareto_solutions.json
+
+============================================================
+GENERATING VISUALIZATIONS
+============================================================
+Creating Pareto front visualization...
+Pareto front analysis saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/pareto_analysis_nsga2.png'
+Analyzing hypervolume and spread...
+Hypervolume and diversity progress saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/hv_spread_nsga2.png'
+Generating Pareto front summary table...
+
+Pareto Front Summary for NSGA2:
+ ID  Energy  Performance
+  0  0.1771       0.2069
+  1  0.2294       0.1107
+  2  0.1720       0.2334
+  3  0.1963       0.1540
+  4  0.1880       0.1789
+  5  0.2149       0.1222
+  6  0.1767       0.2145
+  7  0.2002       0.1453
+  8  0.1796       0.2031
+  9  0.2135       0.1241
+ 10  0.2080       0.1412
+ 11  0.2009       0.1448
+ 12  0.1744       0.2294
+ 13  0.1853       0.1864
+ 14  0.1826       0.1895
+ 15  0.1746       0.2181
+ 16  0.2366       0.1081
+ 17  0.2018       0.1415
+ 18  0.1866       0.1814
+ 19  0.1915       0.1747
+ 20  0.1903       0.1749
+ 21  0.1930       0.1672
+ 22  0.1786       0.2048
+ 23  0.1942       0.1557
+ 24  0.1856       0.1863
+ 25  0.2100       0.1338
+ 26  0.2146       0.1225
+ 27  0.1798       0.1913
+ 28  0.1920       0.1689
+ 29  0.2109       0.1274
+ 30  0.2214       0.1145
+ 31  0.1987       0.1499
+Pareto front summary saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/pareto_summary_nsga2.csv'
+Running multiple optimization runs for statistical analysis...
+
+============================================================
+Running 20 runs for NSGA2 to analyze hypervolume distribution
+============================================================
+  Run 1/20: Hypervolume = 1.1348
+  Run 2/20: Hypervolume = 1.1289
+  Run 3/20: Hypervolume = 1.1406
+  Run 4/20: Hypervolume = 1.1267
+  Run 5/20: Hypervolume = 1.1302
+  Run 6/20: Hypervolume = 1.1356
+  Run 7/20: Hypervolume = 1.0970
+  Run 8/20: Hypervolume = 1.1129
+  Run 9/20: Hypervolume = 1.1197
+  Run 10/20: Hypervolume = 1.1374
+  Run 11/20: Hypervolume = 1.1168
+  Run 12/20: Hypervolume = 1.1096
+  Run 13/20: Hypervolume = 1.1450
+  Run 14/20: Hypervolume = 1.1443
+  Run 15/20: Hypervolume = 1.1360
+  Run 16/20: Hypervolume = 1.1370
+  Run 17/20: Hypervolume = 1.1180
+  Run 18/20: Hypervolume = 1.1388
+  Run 19/20: Hypervolume = 1.1360
+  Run 20/20: Hypervolume = 1.1399
+Hypervolume boxplot saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/hv_boxplot_nsga2.png'
+Multiple runs analysis completed
+Creating Pareto front evolution animation...
+Saved Pareto front evolution animation to nsga2_results/ Tasks_20/instance_fixedproc_018/pareto_evolution.gif
+Pareto evolution animation saved
+
+================================================================================
+DETAILED ANALYSIS OF BEST SOLUTIONS
+================================================================================
+
+============================================================
+BEST ENERGY SOLUTION
+============================================================
+
+Analysis of Best Energy Solution:
+Normalized Energy: 0.1720
+Normalized Performance Penalty: 0.2334
+Actual Energy Consumption: 195.24
+Actual Performance Penalty: 125.90
+
+Optional Execution Statistics:
+Task ID | Total Jobs | Optional Executed | Percentage
+--------------------------------------------------
+      1 |         30 |                10 |     33.3%
+      2 |         15 |                14 |     93.3%
+      3 |         60 |                26 |     43.3%
+      4 |         60 |                25 |     41.7%
+      5 |         20 |                16 |     80.0%
+      6 |         12 |                 9 |     75.0%
+      7 |         30 |                12 |     40.0%
+      8 |         15 |                14 |     93.3%
+      9 |         20 |                16 |     80.0%
+     10 |         12 |                11 |     91.7%
+     11 |         30 |                12 |     40.0%
+     12 |         15 |                14 |     93.3%
+     13 |         30 |                10 |     33.3%
+     14 |         15 |                 9 |     60.0%
+     15 |         15 |                13 |     86.7%
+     16 |         15 |                 9 |     60.0%
+     17 |         60 |                28 |     46.7%
+     18 |         20 |                16 |     80.0%
+     19 |         15 |                 9 |     60.0%
+     20 |         12 |                12 |    100.0%
+
+Processor Utilization:
+Processor | Jobs Assigned | Total Load | Utilization
+------------------------------------------------
+        0 |           103 |    1157.03 |      38.57%
+        1 |            90 |     594.14 |      19.80%
+        2 |           100 |     579.41 |      19.31%
+        3 |            82 |     297.62 |       9.92%
+        4 |           126 |     800.10 |      26.67%
+Average system utilization: 22.86%
+
+Solution Feasibility: ✓ FEASIBLE
+Schedule visualization saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/schedule_best_energy.png'
+Processor analysis saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/processor_analysis_best_energy.png'
+
+============================================================
+BEST PERFORMANCE SOLUTION
+============================================================
+
+Analysis of Best Performance Solution:
+Normalized Energy: 0.2366
+Normalized Performance Penalty: 0.1081
+Actual Energy Consumption: 266.09
+Actual Performance Penalty: 58.31
+
+Optional Execution Statistics:
+Task ID | Total Jobs | Optional Executed | Percentage
+--------------------------------------------------
+      1 |         30 |                15 |     50.0%
+      2 |         15 |                15 |    100.0%
+      3 |         60 |                28 |     46.7%
+      4 |         60 |                29 |     48.3%
+      5 |         20 |                17 |     85.0%
+      6 |         12 |                12 |    100.0%
+      7 |         30 |                19 |     63.3%
+      8 |         15 |                14 |     93.3%
+      9 |         20 |                20 |    100.0%
+     10 |         12 |                12 |    100.0%
+     11 |         30 |                12 |     40.0%
+     12 |         15 |                15 |    100.0%
+     13 |         30 |                13 |     43.3%
+     14 |         15 |                13 |     86.7%
+     15 |         15 |                14 |     93.3%
+     16 |         15 |                12 |     80.0%
+     17 |         60 |                27 |     45.0%
+     18 |         20 |                20 |    100.0%
+     19 |         15 |                14 |     93.3%
+     20 |         12 |                12 |    100.0%
+
+Processor Utilization:
+Processor | Jobs Assigned | Total Load | Utilization
+------------------------------------------------
+        0 |            91 |     930.63 |      31.02%
+        1 |           102 |     592.71 |      19.76%
+        2 |           107 |     626.58 |      20.89%
+        3 |           105 |     349.11 |      11.64%
+        4 |            96 |     689.79 |      22.99%
+Average system utilization: 21.26%
+
+Solution Feasibility: ✓ FEASIBLE
+Schedule visualization saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/schedule_best_performance.png'
+Processor analysis saved as 'nsga2_results/ Tasks_20/instance_fixedproc_018/processor_analysis_best_performance.png'
+Visualization time: 1069.75 seconds
+Total time: 1125.99 seconds
+All files saved to: nsga2_results/ Tasks_20/instance_fixedproc_018
+Completed at: 2025-07-22 08:29:32
