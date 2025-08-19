@@ -1,6 +1,7 @@
 __pycache__/
 results_NSGA/
 results_MOPSO/
+results_nsga2/
 MOPSO/
 results/
 misses_edf.py

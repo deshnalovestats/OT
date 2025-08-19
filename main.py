@@ -28,7 +28,7 @@ from CustJobLevelMutation import JobLevelMutation
 
 def create_sample_system():
     """Create a sample system for testing"""
-    json_file = 'Tasks_30/instance_fixedproc_032.json'
+    json_file = 'data/test1/instance_fixedproc_002.json'
     # json_file = 'sample_data/deshna_test.json'
     with open(json_file, 'r') as f:
         data = json.load(f)
@@ -154,7 +154,7 @@ def run_optimization(algorithm_name: str = 'NSGA2', n_generations: int = 100, ve
         callback=lambda algorithm: problem._evaluate_callback(algorithm)
     )
     
-    print(f"\nOptimization completed!")
+    print(f"\nOptimization completed in {result.exec_time:.2f} seconds")
     print(f"Number of solutions in Pareto front: {len(result.F)}")
     
     return result, problem

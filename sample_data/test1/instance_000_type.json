@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    { "id": 0, "cm": 12, "co": 15, "period": 100 },
+    { "id": 1, "cm": 10, "co": 10, "period": 50 },
+    { "id": 2, "cm": 5, "co": 10, "period": 50 },
+    { "id": 3, "cm": 15, "co": 5, "period": 200 }
+  ],
+  "processors": [
+    { "id": 0, "frequencies": [0.5, 0.7, 0.9, 1.0] },
+    { "id": 1, "frequencies": [0.3, 0.5, 0.7] },
+    { "id": 2, "frequencies": [0.6, 0.8, 1.0] }
+  ]
+}
